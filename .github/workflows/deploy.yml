@@ -1,22 +1,19 @@
 name: deploy
 on:
   push:
+    paths:
+      - ".github/workflows/**"
+      - "src/**"
+      - "build.gradle"
+      - "Dockerfile"
+      - "index.html"
     branches:
       - main
-      - develop
-  pull_request:
-    branches:
-      - main
-      - release/*
-      - develop
-
 jobs:
   makeTagAndRelease:
     runs-on: ubuntu-latest
     outputs:
       tag_name: ${{ steps.create_tag.outputs.new_tag }}
-    permissions:
-      contents: write # 이 줄을 추가합니다.
     steps:
       - uses: actions/checkout@v4
       - name: Create Tag
@@ -39,8 +36,6 @@ jobs:
     name: 도커 이미지 빌드와 푸시
     needs: makeTagAndRelease
     runs-on: ubuntu-latest
-    permissions:
-      packages: write
     steps:
       - uses: actions/checkout@v4
       - name: Docker Buildx 설치
