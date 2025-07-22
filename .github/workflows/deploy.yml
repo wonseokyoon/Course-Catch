@@ -1,14 +1,69 @@
 name: deploy
 on:
   push:
+    paths:
+      - ".github/workflows/**"
+      - "src/**"
+      - "build.gradle"
+      - "Dockerfile"
+      - "index.html"
     branches:
-      - main
-      - develop
+      - main # 이제 main 브랜치로 push 될 때만 이 워크플로우가 실행됩니다.
+
 jobs:
-  hello1:
+  makeTagAndRelease:
     runs-on: ubuntu-latest
+    outputs:
+      tag_name: ${{ steps.create_tag.outputs.new_tag }}
+    # 릴리즈 및 태그 생성을 위해 contents: write 권한이 필요합니다.
+    permissions:
+      contents: write # 이 줄을 추가합니다.
     steps:
-      - name: sayHi
-        run: echo "Hi"
-      - name: sayMyName
-        run: echo "${{ github.actor }}"
+      - uses: actions/checkout@v4
+      - name: Create Tag
+        id: create_tag
+        uses: mathieudutour/github-tag-action@v6.2
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ steps.create_tag.outputs.new_tag }}
+          release_name: Release ${{ steps.create_tag.outputs.new_tag }}
+          body: ${{ steps.create_tag.outputs.changelog }}
+          draft: false
+          prerelease: false
+
+  buildImageAndPush:
+    name: 도커 이미지 빌드와 푸시
+    needs: makeTagAndRelease
+    runs-on: ubuntu-latest
+    # GHCR에 이미지를 푸시하기 위해 packages: write 권한이 필요합니다.
+    permissions:
+      packages: write # 이 줄을 추가해야 합니다!
+    steps:
+      - uses: actions/checkout@v4
+      - name: Docker Buildx 설치
+        uses: docker/setup-buildx-action@v2
+      - name: 레지스트리 로그인
+        uses: docker/login-action@v2
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: set lower case owner name
+        run: |
+          echo "OWNER_LC=${OWNER,,}" >> ${GITHUB_ENV}
+        env:
+          OWNER: "${{ github.repository_owner }}"
+      - name: 빌드 앤 푸시
+        uses: docker/build-push-action@v3
+        with:
+          context: .
+          push: true
+          tags: |
+            ghcr.io/${{ env.OWNER_LC }}/deploy:${{ needs.makeTagAndRelease.outputs.tag_name }},
+            ghcr.io/${{ env.OWNER_LC }}/deploy:latest
