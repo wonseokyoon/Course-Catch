@@ -1,8 +1,9 @@
-name: work-1
+name: deploy
 on:
   push:
     branches:
       - main
+      - develop
 jobs:
   hello1:
     runs-on: ubuntu-latest
