@@ -4,6 +4,7 @@ on:
     branches:
       - main
       - develop
+
 jobs:
   hello1:
     runs-on: ubuntu-latest
@@ -12,3 +13,7 @@ jobs:
         run: echo "Hi"
       - name: sayMyName
         run: echo "${{ github.actor }}"
+      - uses: actions/checkout@v4
+      - uses: mathieudutour/github-tag-action@v6.2
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
