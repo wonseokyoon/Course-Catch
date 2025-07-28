@@ -6,14 +6,17 @@ import com.Catch_Course.domain.member.member.service.MemberService;
 import com.Catch_Course.global.Rq;
 import com.Catch_Course.global.dto.RsData;
 import com.Catch_Course.global.exception.ServiceException;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import lombok.RequiredArgsConstructor;
 import org.hibernate.validator.constraints.Length;
 import org.springframework.web.bind.annotation.*;
 
+@Tag(name = "MemberController", description = "회원 관련 API")
 @RestController
-@RequestMapping("/api/v1/members")
+@RequestMapping("/api/members")
 @RequiredArgsConstructor
 public class ApiV1MemberController {
 
@@ -25,6 +28,7 @@ public class ApiV1MemberController {
                        @NotBlank @Length(min = 3) String nickname) {
     }
 
+    @Operation(summary = "회원 가입")
     @PostMapping("/join")
     public RsData<MemberDto> join(@RequestBody @Valid JoinReqBody body) {
 
@@ -52,6 +56,7 @@ public class ApiV1MemberController {
     record LoginResBody(MemberDto memberDto, String apiKey) {
     }
 
+    @Operation(summary = "로그인", description = "로그인 성공 시 ApiKey와 AccessToken 반환. 쿠키로도 반환")
     @PostMapping("/login")
     public RsData<LoginResBody> login(@RequestBody @Valid LoginReqBody body) {
 
@@ -72,6 +77,7 @@ public class ApiV1MemberController {
         );
     }
 
+    @Operation(summary = "내 정보 조회")
     @GetMapping("/me")
     public RsData<MemberDto> me() {
         Member actor = rq.getAuthenticatedActor();
