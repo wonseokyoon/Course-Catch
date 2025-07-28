@@ -1,9 +1,9 @@
-package com.Catch_Course.domain.post.post.controller;
+package com.Catch_Course.domain.post.controller;
 
-import com.Catch_Course.domain.member.member.entity.Member;
-import com.Catch_Course.domain.post.post.dto.PostDto;
-import com.Catch_Course.domain.post.post.entity.Post;
-import com.Catch_Course.domain.post.post.service.PostService;
+import com.Catch_Course.domain.member.entity.Member;
+import com.Catch_Course.domain.post.dto.PostDto;
+import com.Catch_Course.domain.post.entity.Post;
+import com.Catch_Course.domain.post.service.PostService;
 import com.Catch_Course.global.Rq;
 import com.Catch_Course.global.dto.RsData;
 import com.Catch_Course.global.exception.ServiceException;

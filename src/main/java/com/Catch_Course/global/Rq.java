@@ -1,7 +1,7 @@
 package com.Catch_Course.global;
 
-import com.Catch_Course.domain.member.member.entity.Member;
-import com.Catch_Course.domain.member.member.service.MemberService;
+import com.Catch_Course.domain.member.entity.Member;
+import com.Catch_Course.domain.member.service.MemberService;
 import com.Catch_Course.global.exception.ServiceException;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;

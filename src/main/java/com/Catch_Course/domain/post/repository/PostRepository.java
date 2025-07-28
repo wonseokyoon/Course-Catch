@@ -1,6 +1,6 @@
-package com.Catch_Course.domain.post.post.repository;
+package com.Catch_Course.domain.post.repository;
 
-import com.Catch_Course.domain.post.post.entity.Post;
+import com.Catch_Course.domain.post.entity.Post;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface PostRepository extends JpaRepository<Post, Long> {

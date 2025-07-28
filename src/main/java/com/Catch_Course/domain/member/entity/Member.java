@@ -1,4 +1,4 @@
-package com.Catch_Course.domain.member.member.entity;
+package com.Catch_Course.domain.member.entity;
 
 import com.Catch_Course.global.entity.BaseTime;
 import jakarta.persistence.Column;

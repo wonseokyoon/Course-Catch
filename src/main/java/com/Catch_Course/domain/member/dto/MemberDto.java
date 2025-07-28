@@ -1,6 +1,6 @@
-package com.Catch_Course.domain.member.member.dto;
+package com.Catch_Course.domain.member.dto;
 
-import com.Catch_Course.domain.member.member.entity.Member;
+import com.Catch_Course.domain.member.entity.Member;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Getter;
 

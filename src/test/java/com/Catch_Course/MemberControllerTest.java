@@ -1,8 +1,8 @@
 package com.Catch_Course;
 
-import com.Catch_Course.domain.member.member.entity.Member;
-import com.Catch_Course.domain.member.member.repository.MemberRepository;
-import com.Catch_Course.domain.member.member.service.MemberService;
+import com.Catch_Course.domain.member.entity.Member;
+import com.Catch_Course.domain.member.repository.MemberRepository;
+import com.Catch_Course.domain.member.service.MemberService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
