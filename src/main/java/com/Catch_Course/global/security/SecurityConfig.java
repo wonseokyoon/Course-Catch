@@ -42,9 +42,10 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 .addFilterBefore(customAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
 
-                // 인증 실패 예외 처리
+                // 예외 처리
                 .exceptionHandling(
                         exceptionHandling -> exceptionHandling
+                                // 인증 실패 예외
                                 .authenticationEntryPoint(
                                         (request, response, authException) -> {
                                             response.setContentType("application/json;charset=UTF-8");
@@ -56,6 +57,18 @@ public class SecurityConfig {
                                             );
                                         }
                                 )
+                                // 접근 권한 예외
+                                .accessDeniedHandler(
+                                (request, response, authException) -> {
+                                    response.setContentType("application/json;charset=UTF-8");
+                                    response.setStatus(403);
+                                    response.getWriter().write(
+                                            Ut.Json.toString(
+                                                    new RsData("403-1", "접근 권한이 없습니다.")
+                                            )
+                                    );
+                                }
+                        )
                 );
         ;
         return http.build();
