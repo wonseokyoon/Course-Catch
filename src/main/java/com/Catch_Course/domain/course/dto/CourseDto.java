@@ -16,8 +16,9 @@ public class CourseDto {
     private LocalDateTime modifiedDate;
     private String title;
     private String content;
-    private long authorId;
-    private String authorName;
+    private long instructorId;
+    private String instructorName;
+    private long capacity;
 
     public CourseDto(Course course) {
         this.id = course.getId();
@@ -25,7 +26,8 @@ public class CourseDto {
         this.modifiedDate = course.getModifiedDate();
         this.title = course.getTitle();
         this.content = course.getContent();
-        this.authorId = course.getAuthor().getId();
-        this.authorName = course.getAuthor().getNickname();
+        this.instructorId = course.getInstructor().getId();
+        this.instructorName = course.getInstructor().getNickname();
+        this.capacity = course.getCapacity();
     }
 }

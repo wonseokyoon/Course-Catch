@@ -16,14 +16,15 @@ public class CourseService {
 
     private final CourseRepository courseRepository;
 
-    public Course write(Member author, String title, String content) {
+    public Course write(Member member, String title, String content, long capacity) {
 
         return courseRepository.save(
                 Course
                         .builder()
-                        .author(author)
+                        .instructor(member)
                         .title(title)
                         .content(content)
+                        .capacity(capacity)
                         .build()
         );
     }
@@ -45,9 +46,10 @@ public class CourseService {
     }
 
     @Transactional
-    public void modify(Course course, String title, String content) {
+    public void modify(Course course, String title, String content, long capacity) {
         course.setTitle(title);
         course.setContent(content);
+        course.setCapacity(capacity);
     }
 
     public void flush() {

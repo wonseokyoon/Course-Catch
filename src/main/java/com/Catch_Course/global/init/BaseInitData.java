@@ -27,7 +27,7 @@ public class BaseInitData {
     public ApplicationRunner applicationRunner() {
         return args -> {
             self.memberInit();
-            self.postInit();
+            self.courseInit();
         };
     }
 
@@ -48,7 +48,7 @@ public class BaseInitData {
     }
 
     @Transactional
-    public void postInit() {
+    public void courseInit() {
 
         if(courseService.count() > 0) {
             return;
@@ -56,12 +56,16 @@ public class BaseInitData {
 
         Member user1 = memberService.findByUsername("user1").get();
         Member user2 = memberService.findByUsername("user2").get();
+        Member user3 = memberService.findByUsername("user3").get();
 
-        Course course1 = courseService.write(user1, "축구 하실분 모집합니다.", "저녁 6시까지 모여주세요.");
-        Course course2 = courseService.write(user1, "농구하실분?", "3명 모집");
+        Course course1 = courseService.write(user1, "수학 강의", "일반 수학 기초",50);
+        Course course2 = courseService.write(user1, "국어 강의", "비문학 기초",100);
 
-        courseService.write(user2, "title3", "content3");
-
+        courseService.write(user2, "title3", "content3",10);
+        courseService.write(user2, "title4", "content4",10);
+        courseService.write(user2, "title5", "content5",10);
+        courseService.write(user3, "title6", "content6",10);
+        courseService.write(user3, "title7", "content7",10);
     }
 
 
