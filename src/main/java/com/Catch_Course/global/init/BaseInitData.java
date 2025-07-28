@@ -1,4 +1,4 @@
-package com.Catch_Course.global;
+package com.Catch_Course.global.init;
 
 import com.Catch_Course.domain.member.entity.Member;
 import com.Catch_Course.domain.member.service.MemberService;
