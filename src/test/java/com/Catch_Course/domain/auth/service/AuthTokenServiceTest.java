@@ -3,6 +3,8 @@ package com.Catch_Course.domain.auth.service;
 import com.Catch_Course.domain.member.entity.Member;
 import com.Catch_Course.domain.member.service.MemberService;
 import com.Catch_Course.global.util.Ut;
+import io.jsonwebtoken.Jwt;
+import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -12,7 +14,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.security.Key;
+import javax.crypto.SecretKey;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -24,7 +26,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 class AuthTokenServiceTest {
 
 //    private String secretKey;
-//
+    SecretKey secretKey = Keys.hmacShaKeyFor("abcdefghijklmnopqrstuvwxyz1234567890abcdefghijklmnopqrstuvwxyz1234567890".getBytes());
 //    private int expireSeconds;
 
     @Autowired
@@ -43,12 +45,22 @@ class AuthTokenServiceTest {
     @DisplayName("jwt 생성")
     void createToken() {
         int expireSeconds = 60 * 60 * 24 * 365;
-        Key secretKey = Keys.hmacShaKeyFor("abcdefghijklmnopqrstuvwxyz1234567890abcdefghijklmnopqrstuvwxyz1234567890".getBytes());
+        Map<String,Object> originPayLoad = Map.of("name", "john", "age", 23);
 
-        String jwt = Ut.Jwt.createToken(secretKey, expireSeconds, Map.of("name", "john", "age", 23));
+        String jwt = Ut.Jwt.createAccessToken(secretKey, expireSeconds, Map.of("name", "john", "age", 23));
         assertThat(jwt).isNotBlank();
 
-        System.out.println("jwt = " + jwt);
+        // JWT 파싱
+        Jwt<?,?> parsedJwt = Jwts
+                .parser()
+                .verifyWith(secretKey)
+                .build()
+                .parse(jwt);
+
+        Map<String,Object> payLoad = (Map<String, Object>) parsedJwt.getPayload();
+
+        // 원래(암호화 이전) 페이로드와 파싱된 페이로드가 일치하는지 검증
+        assertThat(payLoad).containsAllEntriesOf(originPayLoad);
     }
 
     @Test
@@ -61,6 +73,15 @@ class AuthTokenServiceTest {
         System.out.println("accessToken = " + accessToken);
     }
 
+    @Test
+    @DisplayName("토큰 유효 검증")
+    void checkValidToken() {
+        Member member = memberService.findByUsername("user1").get();
+        String accessToken = authTokenService.getAccessToken(member);
+
+        boolean isValid = Ut.isValidToken(secretKey, accessToken);
+        assertThat(isValid).isTrue();
+    }
 
 
 }

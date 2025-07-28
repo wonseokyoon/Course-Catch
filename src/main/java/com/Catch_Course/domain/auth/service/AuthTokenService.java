@@ -19,7 +19,7 @@ public class AuthTokenService {
         SecretKey secretKey = Keys.hmacShaKeyFor("abcdefghijklmnopqrstuvwxyz1234567890abcdefghijklmnopqrstuvwxyz1234567890".getBytes());
         Map<String, Object> claims = Map.of("id",member.getId(),"username",member.getUsername());
 
-        return Ut.Jwt.createToken(secretKey, expireSeconds, claims);
+        return Ut.Jwt.createAccessToken(secretKey, expireSeconds, claims);
     }
 
 }
