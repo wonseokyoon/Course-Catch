@@ -2,22 +2,43 @@ name: deploy
 on:
   push:
     paths:
-      - ".github/workflows/**"
-      - "src/**"
-      - "build.gradle"
-      - "Dockerfile"
-      - "index.html"
-    branches:
-      - main # 이제 main 브랜치로 push 될 때만 이 워크플로우가 실행됩니다.
+      - '.github/workflows/**'
+      - 'src/**'
+      - 'build.gradle'
+      - 'Dockerfile'
+      - 'index.html'
+    branches: [ "main", "develop" ]
+  pull_request:
+    branches: [ "main", "develop" ]
 
 jobs:
+  # 1. 테스트 :PR과 Push 시 항상 실행
+  backend-ci:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x ./gradlew
+
+      - name: Run tests with Gradle
+        run: ./gradlew test # 테스트 실행 (build는 포함하지 않음)
+
+  # 2. 릴리스 : main/develop 브랜치로 Push될 때만 실행
   makeTagAndRelease:
+    name: Create Tag and Release
+    if: github.event_name == 'push'
+    needs: backend-ci
     runs-on: ubuntu-latest
     outputs:
       tag_name: ${{ steps.create_tag.outputs.new_tag }}
-    # 릴리즈 및 태그 생성을 위해 contents: write 권한이 필요합니다.
-    permissions:
-      contents: write # 이 줄을 추가합니다.
     steps:
       - uses: actions/checkout@v4
       - name: Create Tag
@@ -37,33 +58,41 @@ jobs:
           draft: false
           prerelease: false
 
+  # 3. 빌드 및 배포: main/develop 브랜치로 Push될 때만 실행
   buildImageAndPush:
     name: 도커 이미지 빌드와 푸시
+    if: github.event_name == 'push'
     needs: makeTagAndRelease
     runs-on: ubuntu-latest
-    # GHCR에 이미지를 푸시하기 위해 packages: write 권한이 필요합니다.
-    permissions:
-      packages: write # 이 줄을 추가해야 합니다!
     steps:
       - uses: actions/checkout@v4
+      - name: application-secret.yml 생성
+        env:
+          ACTIONS_STEP_DEBUG: true
+          NO_HTML: ${{ secrets.APPLICATION_SECRET }}
+        run: echo "APPLICATION_SECRET" > src/main/resources/application-secret.yml
+
       - name: Docker Buildx 설치
         uses: docker/setup-buildx-action@v2
+
       - name: 레지스트리 로그인
         uses: docker/login-action@v2
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
+
       - name: set lower case owner name
         run: |
           echo "OWNER_LC=${OWNER,,}" >> ${GITHUB_ENV}
         env:
-          OWNER: "${{ github.repository_owner }}"
+          OWNER: '${{ github.repository_owner }}'
+
       - name: 빌드 앤 푸시
         uses: docker/build-push-action@v3
         with:
           context: .
           push: true
           tags: |
-            ghcr.io/${{ env.OWNER_LC }}/deploy:${{ needs.makeTagAndRelease.outputs.tag_name }},
-            ghcr.io/${{ env.OWNER_LC }}/deploy:latest
+            ghcr.io/${{ env.OWNER_LC }}/catch-course:${{ needs.makeTagAndRelease.outputs.tag_name }},
+            ghcr.io/${{ env.OWNER_LC }}/catch-course:latest
