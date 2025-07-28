@@ -29,7 +29,7 @@ public class SecurityConfig {
                                 .permitAll()
                                 .requestMatchers(HttpMethod.GET, "/api/**")
                                 .permitAll()
-                                .requestMatchers("/api/members/login", "/api/members/login")
+                                .requestMatchers("/api/members/login", "/api/members/join")
                                 .permitAll()
                                 .anyRequest()
                                 .authenticated()
