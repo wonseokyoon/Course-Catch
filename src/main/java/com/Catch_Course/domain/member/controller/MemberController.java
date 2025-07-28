@@ -13,7 +13,7 @@ import org.hibernate.validator.constraints.Length;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/api/v1/members")
+@RequestMapping("/api/members")
 @RequiredArgsConstructor
 public class MemberController {
 
@@ -27,7 +27,6 @@ public class MemberController {
 
     @PostMapping("/join")
     public RsData<MemberDto> join(@RequestBody @Valid JoinReqBody body) {
-
 
         memberService.findByUsername(body.username())
                 .ifPresent(member -> {
@@ -82,6 +81,4 @@ public class MemberController {
                 new MemberDto(actor)
         );
     }
-
-
 }

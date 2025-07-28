@@ -1,4 +1,4 @@
-package com.Catch_Course.domain.post.entity;
+package com.Catch_Course.domain.course.entity;
 
 import com.Catch_Course.domain.member.entity.Member;
 import com.Catch_Course.global.entity.BaseTime;
@@ -14,7 +14,7 @@ import lombok.*;
 @Getter
 @Setter
 @Builder
-public class Post extends BaseTime {
+public class Course extends BaseTime {
 
     @ManyToOne(fetch = FetchType.LAZY)
     private Member author;

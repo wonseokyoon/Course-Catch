@@ -2,8 +2,8 @@ package com.Catch_Course.global;
 
 import com.Catch_Course.domain.member.entity.Member;
 import com.Catch_Course.domain.member.service.MemberService;
-import com.Catch_Course.domain.post.entity.Post;
-import com.Catch_Course.domain.post.service.PostService;
+import com.Catch_Course.domain.course.entity.Course;
+import com.Catch_Course.domain.course.service.CourseService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.ApplicationRunner;
@@ -16,7 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class BaseInitData {
 
-    private final PostService postService;
+    private final CourseService courseService;
     private final MemberService memberService;
 
     @Autowired
@@ -50,17 +50,17 @@ public class BaseInitData {
     @Transactional
     public void postInit() {
 
-        if(postService.count() > 0) {
+        if(courseService.count() > 0) {
             return;
         }
 
         Member user1 = memberService.findByUsername("user1").get();
         Member user2 = memberService.findByUsername("user2").get();
 
-        Post post1 = postService.write(user1, "축구 하실분 모집합니다.", "저녁 6시까지 모여주세요.");
-        Post post2 = postService.write(user1, "농구하실분?", "3명 모집");
+        Course course1 = courseService.write(user1, "축구 하실분 모집합니다.", "저녁 6시까지 모여주세요.");
+        Course course2 = courseService.write(user1, "농구하실분?", "3명 모집");
 
-        postService.write(user2, "title3", "content3");
+        courseService.write(user2, "title3", "content3");
 
     }
 

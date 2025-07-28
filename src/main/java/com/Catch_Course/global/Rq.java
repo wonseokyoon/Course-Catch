@@ -30,6 +30,5 @@ public class Rq {
         }
 
         return opActor.get();
-
     }
 }

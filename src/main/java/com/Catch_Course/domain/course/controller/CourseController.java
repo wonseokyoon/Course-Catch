@@ -1,9 +1,9 @@
-package com.Catch_Course.domain.post.controller;
+package com.Catch_Course.domain.course.controller;
 
 import com.Catch_Course.domain.member.entity.Member;
-import com.Catch_Course.domain.post.dto.PostDto;
-import com.Catch_Course.domain.post.entity.Post;
-import com.Catch_Course.domain.post.service.PostService;
+import com.Catch_Course.domain.course.dto.CourseDto;
+import com.Catch_Course.domain.course.entity.Course;
+import com.Catch_Course.domain.course.service.CourseService;
 import com.Catch_Course.global.Rq;
 import com.Catch_Course.global.dto.RsData;
 import com.Catch_Course.global.exception.ServiceException;
@@ -19,36 +19,36 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/v1/posts")
 @RequiredArgsConstructor
-public class ApiV1PostController {
+public class CourseController {
 
-    private final PostService postService;
+    private final CourseService courseService;
     private final Rq rq;
 
     @GetMapping
-    public RsData<List<PostDto>> getItems() {
+    public RsData<List<CourseDto>> getItems() {
 
-        List<Post> posts = postService.getItems();
-        List<PostDto> postDtos = posts.stream()
-                .map(PostDto::new)
+        List<Course> courses = courseService.getItems();
+        List<CourseDto> courseDtos = courses.stream()
+                .map(CourseDto::new)
                 .toList();
 
         return new RsData<>(
                 "200-1",
                 "글 목록 조회가 완료되었습니다.",
-                postDtos
+                courseDtos
         );
     }
 
 
     @GetMapping("{id}")
-    public RsData<PostDto> getItem(@PathVariable long id) {
+    public RsData<CourseDto> getItem(@PathVariable long id) {
 
-        Post post = postService.getItem(id).get();
+        Course course = courseService.getItem(id).get();
 
         return new RsData<>(
                 "200-1",
                 "글 조회가 완료되었습니다.",
-                new PostDto(post)
+                new CourseDto(course)
         );
     }
 
@@ -56,10 +56,10 @@ public class ApiV1PostController {
     public RsData<Void> delete(@PathVariable long id) {
 
         Member actor = rq.getAuthenticatedActor();
-        Post post = postService.getItem(id).get();
+        Course course = courseService.getItem(id).get();
 
-        post.canDelete(actor);
-        postService.delete(post);
+        course.canDelete(actor);
+        courseService.delete(course);
 
         return new RsData<>(
                 "200-1",
@@ -78,14 +78,14 @@ public class ApiV1PostController {
     ) {
 
         Member actor = rq.getAuthenticatedActor();
-        Post post = postService.getItem(id).get();
+        Course course = courseService.getItem(id).get();
 
-        if (post.getAuthor().getId() != actor.getId()) {
+        if (course.getAuthor().getId() != actor.getId()) {
             throw new ServiceException("403-1", "자신이 작성한 글만 수정 가능합니다.");
         }
 
-        post.canModify(actor);
-        postService.modify(post, body.title(), body.content());
+        course.canModify(actor);
+        courseService.modify(course, body.title(), body.content());
         return new RsData<>(
                 "200-1",
                 "%d번 글 수정이 완료되었습니다.".formatted(id),
@@ -100,15 +100,15 @@ public class ApiV1PostController {
     }
 
     @PostMapping
-    public RsData<PostDto> write(@RequestBody @Valid WriteReqBody body) {
+    public RsData<CourseDto> write(@RequestBody @Valid WriteReqBody body) {
 
         Member actor = rq.getAuthenticatedActor();
-        Post post = postService.write(actor, body.title(), body.content());
+        Course course = courseService.write(actor, body.title(), body.content());
 
         return new RsData<>(
                 "200-1",
                 "글 작성이 완료되었습니다.",
-                new PostDto(post)
+                new CourseDto(course)
         );
     }
 }
