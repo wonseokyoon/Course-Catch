@@ -3,7 +3,6 @@ package com.Catch_Course.global.util;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.SignatureAlgorithm;
 
 import java.security.Key;
 import java.util.Date;
@@ -30,10 +29,10 @@ public class Ut {
             Date expiration = new Date(issuedAt.getTime() + 1000L * expireSeconds);
 
             String jwt = Jwts.builder()
-                    .setClaims(claims)
-                    .setIssuedAt(issuedAt)
-                    .setExpiration(expiration)
-                    .signWith(secretKey, SignatureAlgorithm.HS256)
+                    .claims(claims)
+                    .issuedAt(issuedAt)
+                    .expiration(expiration)
+                    .signWith(secretKey)
                     .compact();
 
             return jwt;
