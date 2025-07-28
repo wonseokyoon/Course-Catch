@@ -39,6 +39,9 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       tag_name: ${{ steps.create_tag.outputs.new_tag }}
+    # 릴리즈 및 태그 생성을 위해 contents: write 권한이 필요합니다.
+    permissions:
+      contents: write # 이 줄을 추가합니다.
     steps:
       - uses: actions/checkout@v4
       - name: Create Tag
@@ -64,6 +67,9 @@ jobs:
     if: github.event_name == 'push'
     needs: makeTagAndRelease
     runs-on: ubuntu-latest
+    # GHCR에 이미지를 푸시하기 위해 packages: write 권한이 필요합니다.
+    permissions:
+      packages: write # 이 줄을 추가해야 합니다!
     steps:
       - uses: actions/checkout@v4
       - name: no.html 생성
