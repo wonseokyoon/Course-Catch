@@ -1,14 +1,10 @@
 name: deploy
 on:
   push:
-    paths:
-      - ".github/workflows/**"
-      - "src/**"
-      - "build.gradle"
-      - "Dockerfile"
-      - "index.html"
     branches:
       - main
+      - develop
+
 jobs:
   makeTagAndRelease:
     runs-on: ubuntu-latest
