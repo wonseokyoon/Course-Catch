@@ -1,6 +1,6 @@
-package com.Catch_Course.domain.member.member.dto;
+package com.Catch_Course.domain.member.dto;
 
-import com.Catch_Course.domain.member.member.entity.Member;
+import com.Catch_Course.domain.member.entity.Member;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Getter;
 
@@ -20,7 +20,6 @@ public class MemberDto {
         this.id = member.getId();
         this.createdDate = member.getCreatedDate();
         this.modifiedDate = member.getModifiedDate();
-
         this.nickname = member.getNickname();
     }
 }

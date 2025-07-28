@@ -1,9 +1,9 @@
-package com.Catch_Course.global;
+package com.Catch_Course.global.init;
 
-import com.Catch_Course.domain.member.member.entity.Member;
-import com.Catch_Course.domain.member.member.service.MemberService;
-import com.Catch_Course.domain.post.post.entity.Post;
-import com.Catch_Course.domain.post.post.service.PostService;
+import com.Catch_Course.domain.member.entity.Member;
+import com.Catch_Course.domain.member.service.MemberService;
+import com.Catch_Course.domain.course.entity.Course;
+import com.Catch_Course.domain.course.service.CourseService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.ApplicationRunner;
@@ -16,7 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class BaseInitData {
 
-    private final PostService postService;
+    private final CourseService courseService;
     private final MemberService memberService;
 
     @Autowired
@@ -27,7 +27,7 @@ public class BaseInitData {
     public ApplicationRunner applicationRunner() {
         return args -> {
             self.memberInit();
-            self.postInit();
+            self.courseInit();
         };
     }
 
@@ -48,24 +48,24 @@ public class BaseInitData {
     }
 
     @Transactional
-    public void postInit() {
+    public void courseInit() {
 
-        if(postService.count() > 0) {
+        if(courseService.count() > 0) {
             return;
         }
 
         Member user1 = memberService.findByUsername("user1").get();
         Member user2 = memberService.findByUsername("user2").get();
+        Member user3 = memberService.findByUsername("user3").get();
 
-        Post post1 = postService.write(user1, "축구 하실분 모집합니다.", "저녁 6시까지 모여주세요.");
-        post1.addComment(user1, "저 참석하겠습니다.");
-        post1.addComment(user2, "공격수 자리 있나요?");
+        Course course1 = courseService.write(user1, "수학 강의", "일반 수학 기초",50);
+        Course course2 = courseService.write(user1, "국어 강의", "비문학 기초",100);
 
-        Post post2 = postService.write(user1, "농구하실분?", "3명 모집");
-        post2.addComment(user1, "저는 이미 축구하기로 함..");
-
-        postService.write(user2, "title3", "content3");
-
+        courseService.write(user2, "title3", "content3",10);
+        courseService.write(user2, "title4", "content4",10);
+        courseService.write(user2, "title5", "content5",10);
+        courseService.write(user3, "title6", "content6",10);
+        courseService.write(user3, "title7", "content7",10);
     }
 
 

@@ -1,4 +1,4 @@
-package com.Catch_Course.domain.member.member.entity;
+package com.Catch_Course.domain.member.entity;
 
 import com.Catch_Course.global.entity.BaseTime;
 import jakarta.persistence.Column;
@@ -22,7 +22,7 @@ public class Member extends BaseTime {
     private String password;
     @Column(length = 100, unique = true)
     private String apiKey;
-    @Column(length = 100)
+    @Column(length = 100, unique = true)
     private String nickname;
 
     public boolean isAdmin() {

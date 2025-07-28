@@ -1,6 +1,6 @@
-package com.Catch_Course.domain.member.member.repository;
+package com.Catch_Course.domain.member.repository;
 
-import com.Catch_Course.domain.member.member.entity.Member;
+import com.Catch_Course.domain.member.entity.Member;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.Optional;
