@@ -79,7 +79,7 @@ public class MemberController {
     @Operation(summary = "내 정보 조회")
     @GetMapping("/me")
     public RsData<MemberDto> me() {
-        Member actor = rq.getAuthenticatedActor();
+        Member actor = rq.getMember();
 
         return new RsData<>(
                 "200-1",

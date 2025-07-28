@@ -68,7 +68,7 @@ public class CourseController {
     @DeleteMapping("/{id}")
     public RsData<Void> delete(@PathVariable long id) {
 
-        Member member = rq.getAuthenticatedActor();
+        Member member = rq.getMember();
         Course course = courseService.getItem(id)
                 .orElseThrow(() -> new ServiceException("404","존재하지 않는 강의입니다."));
 
@@ -95,7 +95,7 @@ public class CourseController {
     public RsData<Void> modify(@PathVariable long id, @RequestBody @Valid ModifyReqBody body
     ) {
 
-        Member member = rq.getAuthenticatedActor();
+        Member member = rq.getMember();
         Course course = courseService.getItem(id)
                 .orElseThrow(() -> new ServiceException("404","존재하지 않는 강의입니다."));
 
@@ -125,7 +125,7 @@ public class CourseController {
     @PostMapping
     public RsData<CourseDto> write(@RequestBody @Valid WriteReqBody body) {
 
-        Member member = rq.getAuthenticatedActor();
+        Member member = rq.getMember();
         Course course = courseService.write(member, body.title(), body.content(), body.capacity());
 
         return new RsData<>(
