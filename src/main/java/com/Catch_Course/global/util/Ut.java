@@ -54,4 +54,15 @@ public class Ut {
 
         return true;
     }
+
+    // payload 가져오기
+    public static Map<String,Object> getPayload(SecretKey secretKey,String token) {
+
+        return (Map<String, Object>) Jwts
+                .parser()
+                .verifyWith(secretKey)
+                .build()
+                .parse(token)
+                .getPayload();
+    }
 }

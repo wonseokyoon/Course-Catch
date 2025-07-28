@@ -3,8 +3,6 @@ package com.Catch_Course.domain.auth.service;
 import com.Catch_Course.domain.member.entity.Member;
 import com.Catch_Course.domain.member.service.MemberService;
 import com.Catch_Course.global.util.Ut;
-import io.jsonwebtoken.Jwt;
-import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -50,14 +48,7 @@ class AuthTokenServiceTest {
         String jwt = Ut.Jwt.createAccessToken(secretKey, expireSeconds, Map.of("name", "john", "age", 23));
         assertThat(jwt).isNotBlank();
 
-        // JWT 파싱
-        Jwt<?,?> parsedJwt = Jwts
-                .parser()
-                .verifyWith(secretKey)
-                .build()
-                .parse(jwt);
-
-        Map<String,Object> payLoad = (Map<String, Object>) parsedJwt.getPayload();
+        Map<String,Object> payLoad = Ut.getPayload(secretKey, jwt);
 
         // 원래(암호화 이전) 페이로드와 파싱된 페이로드가 일치하는지 검증
         assertThat(payLoad).containsAllEntriesOf(originPayLoad);
