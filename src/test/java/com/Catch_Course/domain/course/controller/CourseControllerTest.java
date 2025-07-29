@@ -65,13 +65,19 @@ class CourseControllerTest {
     void write() {
     }
 
+    String adminLogin() {
+        loginedMember = memberService.findByUsername("admin").get();
+        return memberService.getAccessToken(loginedMember);
+    }
+
     @Test
     @DisplayName("통계 - 관리자 기능 - 관리자 접근")
     @WithUserDetails("admin")   // CustomUserDetailService 의 loadUserByUsername 메서드를 통해 유저 정보 가져옴
     void getStatistics() throws Exception {
+//        accessToken = adminLogin();
         ResultActions resultActions = mvc.perform(
                         get("/api/courses/statistics")
-                // @WithUserDetails("admin") 으로 로그인 한 것처럼 되기때문에, 헤더를 굳이 입력할 필요 x
+                                // @WithUserDetails("admin") 으로 로그인 한 것처럼 되기때문에, 헤더를 굳이 입력할 필요 x
 //                                .header("Authorization", "Bearer " + accessToken)
                 )
                 .andDo(print());
@@ -86,10 +92,11 @@ class CourseControllerTest {
 
     @Test
     @DisplayName("통계 - 관리자 기능 - user1 접근")
+    @WithUserDetails("user1")
     void statisticsUser() throws Exception {
         ResultActions resultActions = mvc.perform(
                         get("/api/courses/statistics")
-                                .header("Authorization", "Bearer " + accessToken)
+//                                .header("Authorization", "Bearer " + accessToken)
                 )
                 .andDo(print());
 

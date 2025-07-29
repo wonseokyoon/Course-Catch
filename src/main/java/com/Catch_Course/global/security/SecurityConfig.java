@@ -27,11 +27,11 @@ public class SecurityConfig {
                                 // swagger,h2 허용
                                 .requestMatchers("/swagger-ui/**","/h2-console/**","/v3/api-docs/**")
                                 .permitAll()
+                                .requestMatchers("/api/courses/statistics")
+                                .hasRole("ADMIN")
                                 .requestMatchers(HttpMethod.GET, "/api/**")
                                 .permitAll()
                                 .requestMatchers("/api/members/login", "/api/members/join")
-                                .permitAll()
-                                .requestMatchers("/api/courses/statistics")
                                 .permitAll()
                                 .anyRequest()
                                 .authenticated()
