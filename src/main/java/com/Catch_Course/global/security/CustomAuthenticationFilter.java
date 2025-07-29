@@ -26,9 +26,11 @@ public class CustomAuthenticationFilter extends OncePerRequestFilter {
 
         // 인증 값이 유효할때
         if(authorization != null && authorization.startsWith("Bearer ")) {
-            String apiKey = authorization.substring("Bearer ".length());
+//            String apiKey = authorization.substring("Bearer ".length());
+//            Optional<Member> optionalMember = memberService.findByApiKey(apiKey);
 
-            Optional<Member> optionalMember = memberService.findByApiKey(apiKey);
+            String accessToken = authorization.substring("Bearer ".length());
+            Optional<Member> optionalMember = memberService.findByAccessToken(accessToken);
 
             // 키 값에 해당되는 유저가 존재하면
             if(optionalMember.isPresent()) {

@@ -24,15 +24,15 @@ public class AuthTokenService {
         return Ut.Jwt.createAccessToken(secretKey, expireSeconds, claims);
     }
 
-    Map<String, Object> getPayload(String secretKey, String token) {
-        Map<String, Object> payload = Ut.Jwt.getPayload(secretKey, token);
+    Map<String, Object> getPayload(String token) {
+        if(!Ut.Jwt.isValidToken(secretKey, token)) return null;
 
-        if(payload == null) return null;
+        Map<String, Object> payload = Ut.Jwt.getPayload(secretKey, token);
 
         // Json은 Long 표현 못함
         // 역직렬화 과정에서 Long -> double로 변환되는 문제 해결
         Number numberId = (Number) payload.get("id");
-        Long id = numberId.longValue();
+        long id = numberId.longValue();
         String username = (String) payload.get("username");
 
         return Map.of("id", id, "username", username);

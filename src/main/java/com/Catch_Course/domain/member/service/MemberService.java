@@ -5,6 +5,7 @@ import com.Catch_Course.domain.member.repository.MemberRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.util.Map;
 import java.util.Optional;
 
 @Service
@@ -43,6 +44,17 @@ public class MemberService {
 
     public String getAccessToken(Member member) {
         return authTokenService.createAccessToken(member);
+    }
+
+    public Optional<Member> findByAccessToken(String accessToken) {
+        // 1. payload 가져옴
+        Map<String,Object> payload = authTokenService.getPayload(accessToken);
+        if(payload.isEmpty()) return Optional.empty();
+
+        // 2. payload 에서 id를 꺼냄
+        Long id = (Long) payload.get("id");
+
+        return memberRepository.findById(id);
     }
 
 

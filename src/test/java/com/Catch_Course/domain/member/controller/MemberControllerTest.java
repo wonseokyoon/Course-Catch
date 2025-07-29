@@ -19,7 +19,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -44,7 +44,7 @@ class MemberControllerTest {
     @DisplayName("user1로 로그인 셋업")
     void setUp() {
         loginedmember = memberService.findByUsername("user1").get();
-        memberService.getAccessToken(loginedmember);
+        accessToken = memberService.getAccessToken(loginedmember);
     }
 
     private ResultActions joinRequest(String username,String password, String nickname) throws Exception {
@@ -114,8 +114,25 @@ class MemberControllerTest {
                 .andExpect(jsonPath("$.data.accessToken").exists());    // accessToken 나오는지
     }
 
+    private ResultActions meRequest(String accessToken) throws Exception {
+        return mvc
+                .perform(
+                        get("/api/members/me")
+                                .header("Authorization", "Bearer " + accessToken)
+                ).andDo(print());
+    }
+
+
     @Test
-    @DisplayName("내 정보 조회")
-    void me() {
+    @DisplayName("내 정보 조회 - accessToken")
+    void me() throws Exception {
+
+        ResultActions resultActions = meRequest(accessToken);
+
+        resultActions
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value("200-1"))
+                .andExpect(jsonPath("$.msg").value("내 정보 조회가 완료되었습니다."));
+
     }
 }

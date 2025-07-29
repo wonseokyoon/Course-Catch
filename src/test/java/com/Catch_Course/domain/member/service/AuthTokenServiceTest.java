@@ -47,7 +47,7 @@ class AuthTokenServiceTest {
         String jwt = Ut.Jwt.createAccessToken(secretKey, expireSeconds, Map.of("id", 1L, "username", "john"));
         assertThat(jwt).isNotBlank();
 
-        Map<String,Object> payload = authTokenService.getPayload(secretKey, jwt);
+        Map<String,Object> payload = authTokenService.getPayload(jwt);
 
         // 원래(암호화 이전) 페이로드와 파싱된 페이로드가 일치하는지 검증
         assertThat(payload).containsAllEntriesOf(originPayLoad);
@@ -71,7 +71,7 @@ class AuthTokenServiceTest {
         boolean isValid = Ut.Jwt.isValidToken(secretKey, accessToken);
         assertThat(isValid).isTrue();
 
-        Map<String, Object> payload = authTokenService.getPayload(secretKey, accessToken);
+        Map<String, Object> payload = authTokenService.getPayload(accessToken);
         System.out.println("payload: "+payload);
 
         assertThat(payload).containsAllEntriesOf(
