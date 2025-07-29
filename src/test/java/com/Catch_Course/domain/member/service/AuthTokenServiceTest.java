@@ -1,7 +1,6 @@
-package com.Catch_Course.domain.auth.service;
+package com.Catch_Course.domain.member.service;
 
 import com.Catch_Course.domain.member.entity.Member;
-import com.Catch_Course.domain.member.service.MemberService;
 import com.Catch_Course.global.util.Ut;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -58,7 +57,7 @@ class AuthTokenServiceTest {
     @DisplayName("accessToken 생성")
     void createAccessToken() {
         Member member = memberService.findByUsername("user1").get();
-        String accessToken = authTokenService.getAccessToken(member);
+        String accessToken = authTokenService.createAccessToken(member);
 
         assertThat(accessToken).isNotBlank();
         System.out.println("accessToken = " + accessToken);
@@ -68,7 +67,7 @@ class AuthTokenServiceTest {
     @DisplayName("토큰 유효 검증")
     void checkValidToken() {
         Member member = memberService.findByUsername("user1").get();
-        String accessToken = authTokenService.getAccessToken(member);
+        String accessToken = authTokenService.createAccessToken(member);
         boolean isValid = Ut.Jwt.isValidToken(secretKey, accessToken);
         assertThat(isValid).isTrue();
 

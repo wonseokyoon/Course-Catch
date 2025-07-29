@@ -12,6 +12,7 @@ import java.util.Optional;
 public class MemberService {
 
     private final MemberRepository memberRepository;
+    private final AuthTokenService authTokenService;
 
     public Member join(String username, String password, String nickname) {
         Member member = Member.builder()
@@ -39,4 +40,10 @@ public class MemberService {
     public Optional<Member> findByApiKey(String apiKey) {
         return memberRepository.findByApiKey(apiKey);
     }
+
+    public String getAccessToken(Member member) {
+        return authTokenService.createAccessToken(member);
+    }
+
+
 }
