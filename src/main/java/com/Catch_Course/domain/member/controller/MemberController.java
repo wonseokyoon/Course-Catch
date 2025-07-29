@@ -82,7 +82,8 @@ public class MemberController {
     @Operation(summary = "내 정보 조회")
     @GetMapping("/me")
     public RsData<MemberDto> me() {
-        Member member = rq.getMember();
+        Member dummyMember = rq.getMember();
+        Member member = memberService.findById(dummyMember.getId()).get();
 
         return new RsData<>(
                 "200-1",

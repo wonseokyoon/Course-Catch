@@ -126,7 +126,7 @@ class MemberControllerTest {
 
     @Test
     @DisplayName("내 정보 조회 - accessToken")
-    void me() throws Exception {
+    void  me() throws Exception {
         ResultActions resultActions = meRequest(accessToken);
 
         resultActions

@@ -41,7 +41,7 @@ public class Rq {
 
     public void setLogin(Member member) {
         // 유저 정보 생성
-        UserDetails user = new SecurityUser(member.getId(), member.getUsername(), member.getPassword(), List.of());
+        UserDetails user = new SecurityUser(member.getId(), member.getUsername(), "", List.of());
 
         // 인증 정보 저장소
         SecurityContextHolder.getContext().setAuthentication(
@@ -49,6 +49,7 @@ public class Rq {
         );
     }
 
+    // dummy 멤버 객체 반환
     public Member getMember() {
         // Security 컨텍스트의 사용자 정보를 꺼내옴
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();

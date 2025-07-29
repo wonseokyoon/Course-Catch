@@ -10,7 +10,8 @@ public class SecurityUser extends User {
     @Getter
     private Long id;
 
-    // id, username, password, 인증정보
+    // 기존 SpringSecurity 가 요구하는 인증 정보: username, password, authorities
+    // id 꼽사리 끼우는 커스터마이
     public SecurityUser(Long id, String username, String password, Collection<? extends GrantedAuthority> authorities) {
         super(username, password, authorities);
         this.id = id;
