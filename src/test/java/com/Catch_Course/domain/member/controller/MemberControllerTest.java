@@ -38,13 +38,14 @@ class MemberControllerTest {
     private MemberService memberService;
 
     private String accessToken;
-    private Member loginedmember;
+    private Member loginedMember;
 
     @BeforeEach
     @DisplayName("user1로 로그인 셋업")
     void setUp() {
-        loginedmember = memberService.findByUsername("user1").get();
-        accessToken = memberService.getAccessToken(loginedmember);
+        loginedMember = memberService.findByUsername("user1").get();
+        accessToken = memberService.getAccessToken(loginedMember);
+        System.out.println("=============셋업=============");
     }
 
     private ResultActions joinRequest(String username,String password, String nickname) throws Exception {
@@ -126,7 +127,6 @@ class MemberControllerTest {
     @Test
     @DisplayName("내 정보 조회 - accessToken")
     void me() throws Exception {
-
         ResultActions resultActions = meRequest(accessToken);
 
         resultActions

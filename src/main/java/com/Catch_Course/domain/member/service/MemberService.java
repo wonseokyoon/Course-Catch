@@ -49,12 +49,19 @@ public class MemberService {
     public Optional<Member> findByAccessToken(String accessToken) {
         // 1. payload 가져옴
         Map<String,Object> payload = authTokenService.getPayload(accessToken);
+
         if(payload.isEmpty()) return Optional.empty();
 
         // 2. payload 에서 id를 꺼냄
         Long id = (Long) payload.get("id");
+        String username = (String) payload.get("username");
 
-        return memberRepository.findById(id);
+        return Optional.of(
+                Member.builder()
+                        .id(id)
+                        .username(username)
+                        .build()
+        );
     }
 
 

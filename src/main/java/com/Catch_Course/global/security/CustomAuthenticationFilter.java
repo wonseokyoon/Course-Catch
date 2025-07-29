@@ -36,7 +36,7 @@ public class CustomAuthenticationFilter extends OncePerRequestFilter {
             if(optionalMember.isPresent()) {
                 Member member = optionalMember.get();
                 // 로그인
-                rq.setLogin(member.getUsername());
+                rq.setLogin(member);
             }
         }
 
