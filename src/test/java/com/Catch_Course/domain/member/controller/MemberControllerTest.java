@@ -80,9 +80,36 @@ class MemberControllerTest {
                 .andExpect(jsonPath("$.msg").value("회원 가입이 완료되었습니다."));
     }
 
+    private ResultActions loginRequest(String username,String password) throws Exception {
+        Map<String,String> requestBody = Map.of("username", username, "password", password);
+
+        // Map -> Json 변환
+        ObjectMapper objectMapper = new ObjectMapper();
+        String json = objectMapper.writeValueAsString(requestBody);
+
+        return mvc
+                .perform(
+                        post("/api/members/login")
+                                .content(json)
+                                .contentType(new MediaType(MediaType.APPLICATION_JSON, StandardCharsets.UTF_8))
+                ).andDo(print());
+    }
+
     @Test
     @DisplayName("로그인")
-    void login() {
+    void login() throws Exception {
+        String username = "user1";
+        String password = "user11234";
+
+        ResultActions resultActions = loginRequest(username,password);
+        Member member = memberService.findByUsername(username).get();
+
+        assertThat(member.getUsername()).isEqualTo(username);
+
+        resultActions
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value("200-1"))
+                .andExpect(jsonPath("$.msg").value("%s님 환영합니다.".formatted(member.getNickname())));
     }
 
     @Test
