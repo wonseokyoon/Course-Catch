@@ -134,4 +134,27 @@ public class CourseController {
                 new CourseDto(course)
         );
     }
+
+    record StatisticsResBody(long courseCount, long publishedCount) {
+    }
+
+    @Operation(
+            summary = "집계 페이지",
+            description = "관리자만 접근 가능한 집계 페이지"
+    )
+    @GetMapping("statistics")
+    public RsData<StatisticsResBody> getStatistics() {
+
+        Member dummyMember = rq.getMember();
+
+        if(!dummyMember.isAdmin()){
+            throw new ServiceException("403-1","접근 권한이 없습니다.");
+        }
+
+        return new RsData<>(
+                "200-1",
+                "통계 조회가 완료되었습니다.",
+                new StatisticsResBody(20,10)
+        );
+    }
 }

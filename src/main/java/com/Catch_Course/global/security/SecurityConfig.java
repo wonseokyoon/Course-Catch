@@ -5,6 +5,7 @@ import com.Catch_Course.global.util.Ut;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.web.SecurityFilterChain;
@@ -26,9 +27,11 @@ public class SecurityConfig {
                                 // swagger,h2 허용
                                 .requestMatchers("/swagger-ui/**","/h2-console/**","/v3/api-docs/**")
                                 .permitAll()
-//                                .requestMatchers(HttpMethod.GET, "/api/**")
-//                                .permitAll()
+                                .requestMatchers(HttpMethod.GET, "/api/**")
+                                .permitAll()
                                 .requestMatchers("/api/members/login", "/api/members/join")
+                                .permitAll()
+                                .requestMatchers("/api/courses/statistics")
                                 .permitAll()
                                 .anyRequest()
                                 .authenticated()
