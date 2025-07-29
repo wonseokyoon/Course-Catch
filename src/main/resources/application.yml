@@ -41,5 +41,5 @@ logging:
 
 custom:
   jwt:
-    secret-key: ${JWT.SECRET-KEY}
-    expire-seconds: "#{5}"
+    secret-key: abcdefghijklmnopqrstuvwxyz1234567890abcdefghijklmnopqrstuvwxyz1234567890
+    expire-seconds: "#{60 * 60 * 24 * 365}"

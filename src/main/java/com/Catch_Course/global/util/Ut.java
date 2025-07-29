@@ -3,9 +3,9 @@ package com.Catch_Course.global.util;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.security.Keys;
 
 import javax.crypto.SecretKey;
-import java.security.Key;
 import java.util.Date;
 import java.util.Map;
 
@@ -24,45 +24,46 @@ public class Ut {
     }
 
     public static class Jwt {
-        public static String createAccessToken(Key secretKey, int expireSeconds, Map<String, Object> claims) {
+        public static String createAccessToken(String secretKey, int expireSeconds, Map<String, Object> claims) {
+            SecretKey key = Keys.hmacShaKeyFor(secretKey.getBytes());
 
             Date issuedAt = new Date();
             Date expiration = new Date(issuedAt.getTime() + 1000L * expireSeconds);
 
-            String jwt = Jwts.builder()
+            return Jwts.builder()
                     .claims(claims)
                     .issuedAt(issuedAt)
                     .expiration(expiration)
-                    .signWith(secretKey)
+                    .signWith(key)
                     .compact();
-
-            return jwt;
         }
-    }
 
-    // 토큰이 유효한지 검증
-    public static boolean isValidToken(SecretKey secretKey, String token) {
-        try {
-            Jwts
+        // 토큰이 유효한지 검증
+        public static boolean isValidToken(String secretKey, String token) {
+            SecretKey key = Keys.hmacShaKeyFor(secretKey.getBytes());
+            try {
+                Jwts
+                        .parser()
+                        .verifyWith(key)
+                        .build()
+                        .parse(token);
+            } catch (Exception e) {
+                return false;
+            }
+
+            return true;
+        }
+
+        // payload 가져오기
+        public static Map<String, Object> getPayload(String secretKey, String token) {
+            SecretKey key = Keys.hmacShaKeyFor(secretKey.getBytes());
+
+            return (Map<String, Object>) Jwts
                     .parser()
-                    .verifyWith(secretKey)
+                    .verifyWith(key)
                     .build()
-                    .parse(token);
-        } catch (Exception e) {
-            return false;
+                    .parse(token)
+                    .getPayload();
         }
-
-        return true;
-    }
-
-    // payload 가져오기
-    public static Map<String,Object> getPayload(SecretKey secretKey,String token) {
-
-        return (Map<String, Object>) Jwts
-                .parser()
-                .verifyWith(secretKey)
-                .build()
-                .parse(token)
-                .getPayload();
     }
 }

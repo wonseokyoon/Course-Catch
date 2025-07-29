@@ -3,16 +3,15 @@ package com.Catch_Course.domain.auth.service;
 import com.Catch_Course.domain.member.entity.Member;
 import com.Catch_Course.domain.member.service.MemberService;
 import com.Catch_Course.global.util.Ut;
-import io.jsonwebtoken.security.Keys;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
 
-import javax.crypto.SecretKey;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -23,9 +22,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 @Transactional
 class AuthTokenServiceTest {
 
-//    private String secretKey;
-    SecretKey secretKey = Keys.hmacShaKeyFor("abcdefghijklmnopqrstuvwxyz1234567890abcdefghijklmnopqrstuvwxyz1234567890".getBytes());
-//    private int expireSeconds;
+    @Value("${custom.jwt.secret-key}")
+    private String secretKey;
+
+    @Value("${custom.jwt.expire-seconds}")
+    private int expireSeconds;
 
     @Autowired
     private AuthTokenService authTokenService;
@@ -42,16 +43,15 @@ class AuthTokenServiceTest {
     @Test
     @DisplayName("jwt 생성")
     void createToken() {
-        int expireSeconds = 60 * 60 * 24 * 365;
-        Map<String,Object> originPayLoad = Map.of("name", "john", "age", 23);
+        Map<String,Object> originPayLoad = Map.of("id", 1L, "username", "john");
 
-        String jwt = Ut.Jwt.createAccessToken(secretKey, expireSeconds, Map.of("name", "john", "age", 23));
+        String jwt = Ut.Jwt.createAccessToken(secretKey, expireSeconds, Map.of("id", 1L, "username", "john"));
         assertThat(jwt).isNotBlank();
 
-        Map<String,Object> payLoad = Ut.getPayload(secretKey, jwt);
+        Map<String,Object> payload = authTokenService.getPayload(secretKey, jwt);
 
         // 원래(암호화 이전) 페이로드와 파싱된 페이로드가 일치하는지 검증
-        assertThat(payLoad).containsAllEntriesOf(originPayLoad);
+        assertThat(payload).containsAllEntriesOf(originPayLoad);
     }
 
     @Test
@@ -69,9 +69,15 @@ class AuthTokenServiceTest {
     void checkValidToken() {
         Member member = memberService.findByUsername("user1").get();
         String accessToken = authTokenService.getAccessToken(member);
-
-        boolean isValid = Ut.isValidToken(secretKey, accessToken);
+        boolean isValid = Ut.Jwt.isValidToken(secretKey, accessToken);
         assertThat(isValid).isTrue();
+
+        Map<String, Object> payload = authTokenService.getPayload(secretKey, accessToken);
+        System.out.println("payload: "+payload);
+
+        assertThat(payload).containsAllEntriesOf(
+                Map.of("id", member.getId(), "username", member.getUsername())
+        );
     }
 
 
