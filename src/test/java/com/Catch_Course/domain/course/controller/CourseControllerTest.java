@@ -92,7 +92,7 @@ class CourseControllerTest {
 
     @Test
     @DisplayName("통계 - 관리자 기능 - user1 접근")
-    @WithUserDetails("user1")
+    @WithUserDetails("admin")
     void statisticsUser() throws Exception {
         ResultActions resultActions = mvc.perform(
                         get("/api/courses/statistics")
