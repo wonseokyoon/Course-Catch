@@ -1,8 +1,8 @@
 package com.Catch_Course.domain.course.service;
 
-import com.Catch_Course.domain.member.entity.Member;
 import com.Catch_Course.domain.course.entity.Course;
 import com.Catch_Course.domain.course.repository.CourseRepository;
+import com.Catch_Course.domain.member.entity.Member;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
