@@ -14,6 +14,7 @@ import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import lombok.RequiredArgsConstructor;
 import org.hibernate.validator.constraints.Length;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -31,6 +32,7 @@ public class CourseController {
             summary = "강의 목록 조회"
     )
     @GetMapping
+    @Transactional(readOnly = true)
     public RsData<List<CourseDto>> getItems() {
 
         List<Course> courses = courseService.getItems();
