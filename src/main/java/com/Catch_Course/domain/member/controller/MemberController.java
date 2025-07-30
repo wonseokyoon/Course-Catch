@@ -8,7 +8,6 @@ import com.Catch_Course.global.dto.RsData;
 import com.Catch_Course.global.exception.ServiceException;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
@@ -69,15 +68,10 @@ public class MemberController {
         }
 
         String accessToken = memberService.getAccessToken(member);
-        // 쿠키 설정
-        Cookie cookie = new Cookie("accessToken", accessToken);
-        cookie.setDomain("localhost");
-        cookie.setPath("/");
-        cookie.setHttpOnly(true);
-        cookie.setSecure(true);
-        cookie.setAttribute("SameSite", "Strict");
 
-        response.addCookie(cookie);
+        // 쿠키에 추가
+        rq.addCookie("accessToken", accessToken);
+        rq.addCookie("apiKey", member.getApiKey());
 
         return new RsData<>(
                 "200-1",

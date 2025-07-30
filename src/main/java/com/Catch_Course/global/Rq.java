@@ -4,7 +4,9 @@ import com.Catch_Course.domain.member.entity.Member;
 import com.Catch_Course.domain.member.service.MemberService;
 import com.Catch_Course.global.exception.ServiceException;
 import com.Catch_Course.global.security.SecurityUser;
+import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -22,6 +24,7 @@ import java.util.Optional;
 public class Rq {
 
     private final HttpServletRequest request;
+    private final HttpServletResponse response;
     private final MemberService memberService;
 
     // 헤더에서 API 키를 직접 읽어서 인증하는 방식
@@ -71,5 +74,37 @@ public class Rq {
                 .build();
     }
 
+    public void addCookie(String name, String value) {
+        Cookie cookie = new Cookie(name, value);
+        cookie.setDomain("localhost");
+        cookie.setPath("/");
+        cookie.setHttpOnly(true);
+        cookie.setSecure(true);
+        cookie.setAttribute("SameSite", "Strict");
 
+        response.addCookie(cookie);
+    }
+
+    public String getHeader(String name) {
+        return request.getHeader(name);
+    }
+
+    public void setHeader(String name, String value) {
+        response.setHeader(name, value);
+    }
+    public String getValueFromCookie(String name) {
+        Cookie[] cookies = request.getCookies();
+
+        if(cookies == null) {
+            return null;
+        }
+
+        for(Cookie cookie : cookies) {
+            if(cookie.getName().equals(name)) {
+                return cookie.getValue();
+            }
+        }
+
+        return null;
+    }
 }
