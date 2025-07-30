@@ -48,14 +48,14 @@ public class MemberService {
         String accessToken = authTokenService.createAccessToken(member);
         String apiKey = member.getApiKey();
 
-        return apiKey+" "+accessToken;  // apiKey 와 accessToken 같이 반환
+        return apiKey + " " + accessToken;  // apiKey 와 accessToken 같이 반환
     }
 
     public Optional<Member> findMemberByAccessToken(String accessToken) {
         // 1. payload 가져옴
-        Map<String,Object> payload = authTokenService.getPayload(accessToken);
+        Map<String, Object> payload = authTokenService.getPayload(accessToken);
 
-        if(payload == null) return Optional.empty();
+        if (payload == null) return Optional.empty();
 
         // 2. payload 에서 id를 꺼냄
         Long id = (Long) payload.get("id");

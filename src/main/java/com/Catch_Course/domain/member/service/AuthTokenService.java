@@ -20,12 +20,12 @@ public class AuthTokenService {
 
     // Member의 AccessToken 가져오기
     String createAccessToken(Member member) {
-        Map<String, Object> claims = Map.of("id",member.getId(),"username",member.getUsername());
+        Map<String, Object> claims = Map.of("id", member.getId(), "username", member.getUsername());
         return Ut.Jwt.createAccessToken(secretKey, expireSeconds, claims);
     }
 
     Map<String, Object> getPayload(String token) {
-        if(!Ut.Jwt.isValidToken(secretKey, token)) return null;
+        if (!Ut.Jwt.isValidToken(secretKey, token)) return null;
 
         Map<String, Object> payload = Ut.Jwt.getPayload(secretKey, token);
 

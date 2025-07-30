@@ -34,7 +34,7 @@ public class Rq {
         String apiKey = authorizationValue.substring("Bearer ".length());
         Optional<Member> opActor = memberService.findByApiKey(apiKey);
 
-        if(opActor.isEmpty()) {
+        if (opActor.isEmpty()) {
             throw new ServiceException("401-1", "잘못된 비밀번호 입니다.");
         }
 
@@ -56,16 +56,16 @@ public class Rq {
         // Security 컨텍스트의 사용자 정보를 꺼내옴
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
-        if(authentication == null) {
-            throw new ServiceException("401-2","로그인이 필요합니다.");
+        if (authentication == null) {
+            throw new ServiceException("401-2", "로그인이 필요합니다.");
         }
 
         // 현재 인증된 사용자 정보
         Object principal = authentication.getPrincipal();
 
         // 정의한 규격(SecurityUser) 인지 확인
-        if(!(principal instanceof SecurityUser user)) {
-            throw new ServiceException("401-3","잘못된 인증 정보 입니다.");
+        if (!(principal instanceof SecurityUser user)) {
+            throw new ServiceException("401-3", "잘못된 인증 정보 입니다.");
         }
 
         return Member.builder()
@@ -92,15 +92,16 @@ public class Rq {
     public void setHeader(String name, String value) {
         response.setHeader(name, value);
     }
+
     public String getValueFromCookie(String name) {
         Cookie[] cookies = request.getCookies();
 
-        if(cookies == null) {
+        if (cookies == null) {
             return null;
         }
 
-        for(Cookie cookie : cookies) {
-            if(cookie.getName().equals(name)) {
+        for (Cookie cookie : cookies) {
+            if (cookie.getName().equals(name)) {
                 return cookie.getValue();
             }
         }

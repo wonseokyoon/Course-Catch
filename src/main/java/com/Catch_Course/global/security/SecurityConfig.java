@@ -25,7 +25,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests((authorizeHttpRequests) ->
                         authorizeHttpRequests
                                 // swagger,h2 허용
-                                .requestMatchers("/swagger-ui/**","/h2-console/**","/v3/api-docs/**")
+                                .requestMatchers("/swagger-ui/**", "/h2-console/**", "/v3/api-docs/**")
                                 .permitAll()
                                 .requestMatchers("/api/courses/statistics")
                                 .hasRole("ADMIN")
@@ -61,16 +61,16 @@ public class SecurityConfig {
                                 )
                                 // 접근 권한 예외
                                 .accessDeniedHandler(
-                                (request, response, authException) -> {
-                                    response.setContentType("application/json;charset=UTF-8");
-                                    response.setStatus(403);
-                                    response.getWriter().write(
-                                            Ut.Json.toString(
-                                                    new RsData("403-1", "접근 권한이 없습니다.")
-                                            )
-                                    );
-                                }
-                        )
+                                        (request, response, authException) -> {
+                                            response.setContentType("application/json;charset=UTF-8");
+                                            response.setStatus(403);
+                                            response.getWriter().write(
+                                                    Ut.Json.toString(
+                                                            new RsData("403-1", "접근 권한이 없습니다.")
+                                                    )
+                                            );
+                                        }
+                                )
                 );
         ;
         return http.build();
