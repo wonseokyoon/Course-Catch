@@ -22,7 +22,7 @@ public class CustomAuthenticationFilter extends OncePerRequestFilter {
 
     private boolean isAuthorizationHeader(String header) {
 
-        if(header == null){
+        if (header == null) {
             return false;
         }
 
@@ -33,12 +33,12 @@ public class CustomAuthenticationFilter extends OncePerRequestFilter {
     private String[] getAuthTokenFromRequest() {
         String header = rq.getHeader("Authorization");
 
-        if(isAuthorizationHeader(header)) {
+        if (isAuthorizationHeader(header)) {
             String authToken = header.substring("Bearer ".length());
-            String[] tokens = authToken.split(" ",2);
+            String[] tokens = authToken.split(" ", 2);
 
             // 뭐가 하나 없는 경우
-            if(tokens.length < 2) {
+            if (tokens.length < 2) {
                 return null;
             }
 
@@ -49,7 +49,7 @@ public class CustomAuthenticationFilter extends OncePerRequestFilter {
             String accessToken = rq.getValueFromCookie("accessToken");
             String apiKey = rq.getValueFromCookie("apiKey");
 
-            if(accessToken == null || apiKey == null) {
+            if (accessToken == null || apiKey == null) {
                 return null;
             }
 
@@ -62,7 +62,7 @@ public class CustomAuthenticationFilter extends OncePerRequestFilter {
         Optional<Member> optionalMember = memberService.findMemberByAccessToken(accessToken);
 
         // accessToken 에 해당되는 유저가 존재하면
-        if(optionalMember.isPresent()) {
+        if (optionalMember.isPresent()) {
             return optionalMember.get();
         } else {
 
@@ -70,12 +70,12 @@ public class CustomAuthenticationFilter extends OncePerRequestFilter {
             Optional<Member> reissueMember = memberService.findByApiKey(apiKey);
 
             // 그마저도 없으면 넘김
-            if(reissueMember.isEmpty()) {
+            if (reissueMember.isEmpty()) {
                 return null;
             }
 
             // 새로운 토큰 발급
-            String newAccessToken  = memberService.getAccessToken(reissueMember.get());
+            String newAccessToken = memberService.getAccessToken(reissueMember.get());
 
             // 헤더에 추가
             rq.setHeader("Authorization", "Bearer " + newAccessToken);
@@ -92,7 +92,7 @@ public class CustomAuthenticationFilter extends OncePerRequestFilter {
 
         String[] tokens = getAuthTokenFromRequest();
 
-        if(tokens == null) {
+        if (tokens == null) {
             filterChain.doFilter(request, response);
             return;
         }
@@ -102,7 +102,7 @@ public class CustomAuthenticationFilter extends OncePerRequestFilter {
 
         Member member = refreshAccessToken(accessToken, apiKey);
 
-        if(member == null) {
+        if (member == null) {
             filterChain.doFilter(request, response);
             return;
         }
