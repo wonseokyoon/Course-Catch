@@ -42,15 +42,20 @@ public class MemberService {
         return memberRepository.findByApiKey(apiKey);
     }
 
-    public String getAccessToken(Member member) {
-        return authTokenService.createAccessToken(member);
+    // apiKey + accessToken
+    public String getAuthToken(Member member) {
+
+        String accessToken = authTokenService.createAccessToken(member);
+        String apiKey = member.getApiKey();
+
+        return apiKey+" "+accessToken;  // apiKey 와 accessToken 같이 반환
     }
 
-    public Optional<Member> findByAccessToken(String accessToken) {
+    public Optional<Member> findMemberByAccessToken(String accessToken) {
         // 1. payload 가져옴
         Map<String,Object> payload = authTokenService.getPayload(accessToken);
 
-        if(payload.isEmpty()) return Optional.empty();
+        if(payload == null) return Optional.empty();
 
         // 2. payload 에서 id를 꺼냄
         Long id = (Long) payload.get("id");
@@ -64,5 +69,8 @@ public class MemberService {
         );
     }
 
+    public String getAccessToken(Member member) {
+        return authTokenService.createAccessToken(member);
+    }
 
 }

@@ -37,14 +37,15 @@ class MemberControllerTest {
     @Autowired
     private MemberService memberService;
 
-    private String accessToken;
+    private String token;
     private Member loginedMember;
 
     @BeforeEach
     @DisplayName("user1로 로그인 셋업")
     void setUp() {
         loginedMember = memberService.findByUsername("user1").get();
-        accessToken = memberService.getAccessToken(loginedMember);
+        token = memberService.getAuthToken(loginedMember);
+        System.out.println("token: "+ token);
         System.out.println("=============셋업=============");
     }
 
@@ -127,7 +128,22 @@ class MemberControllerTest {
     @Test
     @DisplayName("내 정보 조회 - accessToken")
     void  me() throws Exception {
-        ResultActions resultActions = meRequest(accessToken);
+        ResultActions resultActions = meRequest(token);
+
+        resultActions
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value("200-1"))
+                .andExpect(jsonPath("$.msg").value("내 정보 조회가 완료되었습니다."));
+
+    }
+
+    @Test
+    @DisplayName("내 정보 조회 - 만료된 토큰으로 재발급 확인")
+    void me2() throws Exception {
+        String expiredToken
+                = "user1 eyJhbGciOiJIUzUxMiJ9.eyJ1c2VybmFtZSI6InVzZXIxIiwiaWQiOjMsImlhdCI6MTc1Mzg1NjQ2OSwiZXhwIjoxNzUzODU2NDc0fQ.-90YTIv40Mcdx5WCL2lbGnuXErcdOnBSQAyrKx42rdjurZdJvOSm8w_JxE9IvLxjE0HKss985XmXTmoRUrUv2g";
+
+        ResultActions resultActions = meRequest(expiredToken);
 
         resultActions
                 .andExpect(status().isOk())

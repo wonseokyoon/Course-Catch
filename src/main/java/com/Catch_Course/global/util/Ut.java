@@ -48,6 +48,7 @@ public class Ut {
                         .build()
                         .parse(token);
             } catch (Exception e) {
+                e.printStackTrace();
                 return false;
             }
 

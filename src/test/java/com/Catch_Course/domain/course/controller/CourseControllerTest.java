@@ -30,14 +30,14 @@ class CourseControllerTest {
     @Autowired
     private MemberService memberService;
 
-    private String accessToken;
+    private String token;
     private Member loginedMember;
 
     @BeforeEach
     @DisplayName("user1로 로그인 셋업")
     void setUp() {
         loginedMember = memberService.findByUsername("user1").get();
-        accessToken = memberService.getAccessToken(loginedMember);
+        token = memberService.getAuthToken(loginedMember);
     }
 
     @Test
@@ -92,11 +92,10 @@ class CourseControllerTest {
 
     @Test
     @DisplayName("통계 - 관리자 기능 - user1 접근")
-    @WithUserDetails("admin")
     void statisticsUser() throws Exception {
         ResultActions resultActions = mvc.perform(
                         get("/api/courses/statistics")
-//                                .header("Authorization", "Bearer " + accessToken)
+                                .header("Authorization", "Bearer " + token)
                 )
                 .andDo(print());
 
