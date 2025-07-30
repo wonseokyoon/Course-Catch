@@ -74,8 +74,17 @@ public class Rq {
                 .build();
     }
 
+    public String getHeader(String name) {
+        return request.getHeader(name);
+    }
+
+    public void setHeader(String name, String value) {
+        response.setHeader(name, value);
+    }
+
     public void addCookie(String name, String value) {
         Cookie cookie = new Cookie(name, value);
+
         cookie.setDomain("localhost");
         cookie.setPath("/");
         cookie.setHttpOnly(true);
@@ -83,14 +92,6 @@ public class Rq {
         cookie.setAttribute("SameSite", "Strict");
 
         response.addCookie(cookie);
-    }
-
-    public String getHeader(String name) {
-        return request.getHeader(name);
-    }
-
-    public void setHeader(String name, String value) {
-        response.setHeader(name, value);
     }
 
     public String getValueFromCookie(String name) {

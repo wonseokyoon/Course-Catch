@@ -29,8 +29,10 @@ public class CustomAuthenticationFilter extends OncePerRequestFilter {
         return header.startsWith("Bearer ");
     }
 
+    record AuthToken(String apiKey, String accessToken) {}
+
     // 요청으로부터 authToken(apiKey,accessToken) 꺼냄
-    private String[] getAuthTokenFromRequest() {
+    private AuthToken getAuthTokenFromRequest() {
         String header = rq.getHeader("Authorization");
 
         if (isAuthorizationHeader(header)) {
@@ -42,19 +44,18 @@ public class CustomAuthenticationFilter extends OncePerRequestFilter {
                 return null;
             }
 
-            return tokens;
-        } else {
-            // 헤더 인증 값이 유효하지 않을때
-            // 쿠키로 체크
-            String accessToken = rq.getValueFromCookie("accessToken");
-            String apiKey = rq.getValueFromCookie("apiKey");
-
-            if (accessToken == null || apiKey == null) {
-                return null;
-            }
-
-            return new String[]{apiKey, accessToken};
+            return new AuthToken(tokens[0], tokens[1]);
         }
+
+        // 쿠키로 체크
+        String accessToken = rq.getValueFromCookie("accessToken");
+        String apiKey = rq.getValueFromCookie("apiKey");
+
+        if (accessToken == null && apiKey == null) {
+            return null;
+        }
+
+        return new AuthToken(apiKey, accessToken);
     }
 
     // accessToken 재발급
@@ -84,21 +85,20 @@ public class CustomAuthenticationFilter extends OncePerRequestFilter {
 
             return reissueMember.get();
         }
-
     }
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
 
-        String[] tokens = getAuthTokenFromRequest();
+        AuthToken tokens = getAuthTokenFromRequest();
 
         if (tokens == null) {
             filterChain.doFilter(request, response);
             return;
         }
 
-        String apiKey = tokens[0];
-        String accessToken = tokens[1];
+        String apiKey = tokens.apiKey;
+        String accessToken = tokens.accessToken;
 
         Member member = refreshAccessToken(accessToken, apiKey);
 
