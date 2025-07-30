@@ -18,6 +18,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -121,8 +122,57 @@ class CourseControllerTest {
     }
 
     @Test
-    @DisplayName("강의 삭제 - 작성자만 삭제 가능")
-    void delete() {
+    @DisplayName("강의 삭제 성공 - 작성자만 삭제 가능")
+    void deleteItem1() throws Exception {
+        long courseId = 1L;
+
+        ResultActions resultActions = mvc.perform(
+                        delete("/api/courses/%d".formatted(courseId))
+                                .header("Authorization", "Bearer " + token)
+                )
+                .andDo(print());
+
+        resultActions
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value("200-1"))
+                .andExpect(jsonPath("$.msg").value("%d번 강의 삭제가 완료되었습니다.".formatted(courseId)));
+
+    }
+
+    @Test
+    @DisplayName("강의 삭제 실패 - 작성자만 삭제 가능")
+    void deleteItem2() throws Exception {
+        long courseId = 5L;
+
+        ResultActions resultActions = mvc.perform(
+                        delete("/api/courses/%d".formatted(courseId))
+                                .header("Authorization", "Bearer " + token)
+                )
+                .andDo(print());
+
+        resultActions
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value("403-1"))
+                .andExpect(jsonPath("$.msg").value("자신이 생성한 강의만 삭제 가능합니다."));
+
+    }
+
+    @Test
+    @DisplayName("강의 삭제 실패 - 존재하지 않는 강의 삭제")
+    void deleteItem3() throws Exception {
+        long courseId = 999L;
+
+        ResultActions resultActions = mvc.perform(
+                        delete("/api/courses/%d".formatted(courseId))
+                                .header("Authorization", "Bearer " + token)
+                )
+                .andDo(print());
+
+        resultActions
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("404-1"))
+                .andExpect(jsonPath("$.msg").value("존재하지 않는 강의입니다."));
+
     }
 
     @Test

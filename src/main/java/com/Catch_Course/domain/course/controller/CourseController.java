@@ -56,7 +56,7 @@ public class CourseController {
     public RsData<CourseDto> getItem(@PathVariable long id) {
 
         Course course = courseService.getItem(id)
-                .orElseThrow(() -> new ServiceException("404", "존재하지 않는 강의입니다."));
+                .orElseThrow(() -> new ServiceException("404-1", "존재하지 않는 강의입니다."));
 
         return new RsData<>(
                 "200-1",
@@ -69,11 +69,12 @@ public class CourseController {
             summary = "강의 삭제"
     )
     @DeleteMapping("/{id}")
+    @Transactional
     public RsData<Void> delete(@PathVariable long id) {
 
         Member dummyMember = rq.getDummyMember();        // 더미 유저 객체(id,username,authorities 만 있음, 필요하면 DB에서 꺼내씀)
         Course course = courseService.getItem(id)
-                .orElseThrow(() -> new ServiceException("404", "존재하지 않는 강의입니다."));
+                .orElseThrow(() -> new ServiceException("404-1", "존재하지 않는 강의입니다."));
 
         course.canDelete(dummyMember);
         courseService.delete(course);
@@ -100,7 +101,7 @@ public class CourseController {
 
         Member dummyMember = rq.getDummyMember();
         Course course = courseService.getItem(id)
-                .orElseThrow(() -> new ServiceException("404", "존재하지 않는 강의입니다."));
+                .orElseThrow(() -> new ServiceException("404-1", "존재하지 않는 강의입니다."));
 
         if (!course.getInstructor().getId().equals(dummyMember.getId())) {
             throw new ServiceException("403-1", "자신이 작성한 글만 수정 가능합니다.");
