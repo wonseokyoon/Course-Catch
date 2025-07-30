@@ -8,6 +8,8 @@ import com.Catch_Course.global.dto.RsData;
 import com.Catch_Course.global.exception.ServiceException;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import lombok.RequiredArgsConstructor;
@@ -57,7 +59,7 @@ public class MemberController {
 
     @Operation(summary = "로그인", description = "로그인 성공 시 ApiKey와 AccessToken 반환. 쿠키로도 반환")
     @PostMapping("/login")
-    public RsData<LoginResBody> login(@RequestBody @Valid LoginReqBody body) {
+    public RsData<LoginResBody> login(@RequestBody @Valid LoginReqBody body, HttpServletResponse response) {
 
         Member member = memberService.findByUsername(body.username())
                 .orElseThrow(() -> new ServiceException("401-2", "아이디 또는 비밀번호가 일치하지 않습니다."));
@@ -67,6 +69,15 @@ public class MemberController {
         }
 
         String accessToken = memberService.getAccessToken(member);
+        // 쿠키 설정
+        Cookie cookie = new Cookie("accessToken", accessToken);
+        cookie.setDomain("localhost");
+        cookie.setPath("/");
+        cookie.setHttpOnly(true);
+        cookie.setSecure(true);
+        cookie.setAttribute("SameSite", "Strict");
+
+        response.addCookie(cookie);
 
         return new RsData<>(
                 "200-1",
