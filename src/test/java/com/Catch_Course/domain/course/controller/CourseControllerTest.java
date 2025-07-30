@@ -83,12 +83,41 @@ class CourseControllerTest {
                 .map(CourseDto::new)
                 .toList();
 
-        checkCourses(courseDtos,resultActions);
+        checkCourses(courseDtos, resultActions);
+    }
+
+    private void checkCourse(CourseDto course, ResultActions resultActions) throws Exception {
+
+        resultActions
+                .andExpect(jsonPath("$.data").exists())
+                .andExpect(jsonPath("$.data.id").value(course.getId()))
+                .andExpect(jsonPath("$.data.title").value(course.getTitle()))
+                .andExpect(jsonPath("$.data.instructorId").value(course.getInstructorId()))
+                .andExpect(jsonPath("$.data.instructorName").value(course.getInstructorName()))
+                .andExpect(jsonPath("$.data.capacity").value(course.getCapacity()))
+        ;
     }
 
     @Test
     @DisplayName("강의 상세 조회")
-    void getItem() {
+    void getItem() throws Exception {
+        long courseId = 1L;
+
+        ResultActions resultActions = mvc.perform(
+                        get("/api/courses/%d".formatted(courseId))
+                                .header("Authorization", "Bearer " + token)
+                )
+                .andDo(print());
+
+
+        resultActions
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value("200-1"))
+                .andExpect(jsonPath("$.msg").value("강의 상세 조회가 완료되었습니다."));
+
+        // DB 에서 실제 강의 목록 가져옴
+        CourseDto courseDto = new CourseDto(courseService.getItem(courseId).get());
+        checkCourse(courseDto, resultActions);
     }
 
     @Test

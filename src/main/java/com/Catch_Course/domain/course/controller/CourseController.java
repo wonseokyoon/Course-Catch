@@ -52,6 +52,7 @@ public class CourseController {
             summary = "강의 상세 조회"
     )
     @GetMapping("{id}")
+    @Transactional(readOnly = true)
     public RsData<CourseDto> getItem(@PathVariable long id) {
 
         Course course = courseService.getItem(id)
