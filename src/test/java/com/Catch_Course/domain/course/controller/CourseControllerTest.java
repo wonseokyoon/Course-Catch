@@ -122,6 +122,23 @@ class CourseControllerTest {
     }
 
     @Test
+    @DisplayName("강의 상세 조회 실패 - 존재하지 않는 강의")
+    void getItem2() throws Exception {
+        long courseId = 999L;
+
+        ResultActions resultActions = mvc.perform(
+                        get("/api/courses/%d".formatted(courseId))
+                                .header("Authorization", "Bearer " + token)
+                )
+                .andDo(print());
+
+        resultActions
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("404-1"))
+                .andExpect(jsonPath("$.msg").value("존재하지 않는 강의입니다."));
+    }
+
+    @Test
     @DisplayName("강의 삭제 성공 - 작성자만 삭제 가능")
     void deleteItem1() throws Exception {
         long courseId = 1L;
@@ -154,7 +171,6 @@ class CourseControllerTest {
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.code").value("403-1"))
                 .andExpect(jsonPath("$.msg").value("자신이 생성한 강의만 삭제 가능합니다."));
-
     }
 
     @Test
@@ -172,7 +188,6 @@ class CourseControllerTest {
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.code").value("404-1"))
                 .andExpect(jsonPath("$.msg").value("존재하지 않는 강의입니다."));
-
     }
 
     @Test
