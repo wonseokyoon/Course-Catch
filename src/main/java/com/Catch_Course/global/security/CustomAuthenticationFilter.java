@@ -12,6 +12,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.Optional;
 
 @Component
@@ -65,30 +66,36 @@ public class CustomAuthenticationFilter extends OncePerRequestFilter {
         // accessToken 에 해당되는 유저가 존재하면
         if (optionalMember.isPresent()) {
             return optionalMember.get();
-        } else {
-
-            // apiKey 값으로 재발급 체크
-            Optional<Member> reissueMember = memberService.findByApiKey(apiKey);
-
-            // 그마저도 없으면 넘김
-            if (reissueMember.isEmpty()) {
-                return null;
-            }
-
-            // 새로운 토큰 발급
-            String newAccessToken = memberService.getAccessToken(reissueMember.get());
-
-            // 헤더에 추가
-            rq.setHeader("Authorization", "Bearer " + newAccessToken);
-            // 쿠키에 추가
-            rq.addCookie("accessToken", newAccessToken);
-
-            return reissueMember.get();
         }
+
+        // apiKey 값으로 재발급 체크
+        Optional<Member> reissueMember = memberService.findByApiKey(apiKey);
+
+        // 그마저도 없으면 넘김
+        if (reissueMember.isEmpty()) {
+            return null;
+        }
+
+        // 새로운 토큰 발급
+        String newAccessToken = memberService.getAccessToken(reissueMember.get());
+
+        // 쿠키에 추가
+        rq.addCookie("accessToken", newAccessToken);
+        rq.addCookie("apiKey", apiKey);
+
+        return reissueMember.get();
     }
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
+
+        // 로그인, 회원가입 요청은 pass (어차피 tokens 을 null 체크하면서 걸러지긴 하는데 명확히 하기 위해서)
+        String url = request.getRequestURI();
+
+        if(List.of("/api/members/login", "/api/members/join").contains(url)) {
+            filterChain.doFilter(request, response);
+            return;
+        }
 
         AuthToken tokens = getAuthTokenFromRequest();
 

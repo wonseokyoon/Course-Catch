@@ -68,7 +68,7 @@ public class CourseController {
     @DeleteMapping("/{id}")
     public RsData<Void> delete(@PathVariable long id) {
 
-        Member dummyMember = rq.getMember();        // 더미 유저 객체(id,username,authorities 만 있음, 필요하면 DB에서 꺼내씀)
+        Member dummyMember = rq.getDummyMember();        // 더미 유저 객체(id,username,authorities 만 있음, 필요하면 DB에서 꺼내씀)
         Course course = courseService.getItem(id)
                 .orElseThrow(() -> new ServiceException("404", "존재하지 않는 강의입니다."));
 
@@ -95,7 +95,7 @@ public class CourseController {
     public RsData<Void> modify(@PathVariable long id, @RequestBody @Valid ModifyReqBody body
     ) {
 
-        Member dummyMember = rq.getMember();
+        Member dummyMember = rq.getDummyMember();
         Course course = courseService.getItem(id)
                 .orElseThrow(() -> new ServiceException("404", "존재하지 않는 강의입니다."));
 
@@ -125,7 +125,7 @@ public class CourseController {
     @PostMapping
     public RsData<CourseDto> write(@RequestBody @Valid WriteReqBody body) {
 
-        Member dummyMember = rq.getMember();
+        Member dummyMember = rq.getDummyMember();
         Course course = courseService.write(dummyMember, body.title(), body.content(), body.capacity());
 
         return new RsData<>(

@@ -52,7 +52,7 @@ public class Rq {
     }
 
     // dummy 멤버 객체 반환
-    public Member getMember() {
+    public Member getDummyMember() {
         // Security 컨텍스트의 사용자 정보를 꺼내옴
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
@@ -72,6 +72,11 @@ public class Rq {
                 .id(user.getId())
                 .username(user.getUsername())
                 .build();
+    }
+
+    // 임시(더미) 멤버를 진짜 멤버 객체로 반환
+    public Member getMember(Member dummyMember) {
+        return memberService.findById(dummyMember.getId()).get();
     }
 
     public String getHeader(String name) {
