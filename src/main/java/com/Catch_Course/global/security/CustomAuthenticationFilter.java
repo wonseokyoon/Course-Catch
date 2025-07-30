@@ -30,7 +30,8 @@ public class CustomAuthenticationFilter extends OncePerRequestFilter {
         return header.startsWith("Bearer ");
     }
 
-    record AuthToken(String apiKey, String accessToken) {}
+    record AuthToken(String apiKey, String accessToken) {
+    }
 
     // 요청으로부터 authToken(apiKey,accessToken) 꺼냄
     private AuthToken getAuthTokenFromRequest() {
@@ -89,10 +90,11 @@ public class CustomAuthenticationFilter extends OncePerRequestFilter {
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
 
-        // 로그인, 회원가입 요청은 pass (어차피 tokens 을 null 체크하면서 걸러지긴 하는데 명확히 하기 위해서)
+        // 인증 정보가 필요없는 요청은 통과 (다음 필터에 맞김, 로그인과 회원가입은 없어도 상관없는데 메서드를 명확하게 하기 위해 포함)
+        // 다음 필터에서: SecurityConfig 의 permitAll() 조건을 확인하고 인증 없이 통과시켜줌
         String url = request.getRequestURI();
 
-        if(List.of("/api/members/login", "/api/members/join").contains(url)) {
+        if (List.of("/api/members/login", "/api/members/join", "/api/members/logout").contains(url)) {
             filterChain.doFilter(request, response);
             return;
         }

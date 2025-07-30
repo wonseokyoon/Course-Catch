@@ -22,7 +22,8 @@ import java.util.Map;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 
 @SpringBootTest
@@ -45,12 +46,12 @@ class MemberControllerTest {
     void setUp() {
         loginedMember = memberService.findByUsername("user1").get();
         token = memberService.getAuthToken(loginedMember);
-        System.out.println("token: "+ token);
+        System.out.println("token: " + token);
         System.out.println("=============셋업=============");
     }
 
-    private ResultActions joinRequest(String username,String password, String nickname) throws Exception {
-        Map<String,String> requestBody = Map.of("username", username, "password", password, "nickname", nickname);
+    private ResultActions joinRequest(String username, String password, String nickname) throws Exception {
+        Map<String, String> requestBody = Map.of("username", username, "password", password, "nickname", nickname);
 
         // Map -> Json 변환
         ObjectMapper objectMapper = new ObjectMapper();
@@ -71,7 +72,7 @@ class MemberControllerTest {
         String password = "password";
         String nickname = "newNickname1";
 
-        ResultActions resultActions = joinRequest(username,password,nickname);
+        ResultActions resultActions = joinRequest(username, password, nickname);
         Member member = memberService.findByUsername(username).get();
 
         assertThat(member.getNickname()).isEqualTo(nickname);
@@ -82,8 +83,8 @@ class MemberControllerTest {
                 .andExpect(jsonPath("$.msg").value("회원 가입이 완료되었습니다."));
     }
 
-    private ResultActions loginRequest(String username,String password) throws Exception {
-        Map<String,String> requestBody = Map.of("username", username, "password", password);
+    private ResultActions loginRequest(String username, String password) throws Exception {
+        Map<String, String> requestBody = Map.of("username", username, "password", password);
 
         // Map -> Json 변환
         ObjectMapper objectMapper = new ObjectMapper();
@@ -103,7 +104,7 @@ class MemberControllerTest {
         String username = "user1";
         String password = "user11234";
 
-        ResultActions resultActions = loginRequest(username,password);
+        ResultActions resultActions = loginRequest(username, password);
         Member member = memberService.findByUsername(username).get();
 
         resultActions
@@ -159,15 +160,6 @@ class MemberControllerTest {
                 ).andDo(print());
     }
 
-    private ResultActions meRequestByCookie(String accessToken) throws Exception {
-        return mvc
-                .perform(
-                        get("/api/members/me")
-                                .cookie(new Cookie("accessToken", accessToken))
-
-                ).andDo(print());
-    }
-
     @Test
     @DisplayName("로그아웃 - 쿠키 삭제")
     void logout() throws Exception {
@@ -176,9 +168,20 @@ class MemberControllerTest {
         resultActions
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value("200-1"))
-                .andExpect(jsonPath("$.msg").value("로그아웃이 완료되었습니다."))
-                .andExpect(cookie().value("accessToken", (String) null))
-                .andExpect(cookie().value("apiKey", (String) null))
-        ;
+                .andExpect(jsonPath("$.msg").value("로그아웃이 완료되었습니다."));
+
+        // 쿠키 삭제됐는지 확인
+        resultActions
+                .andExpect(
+                        mvcResult -> {
+                            Cookie accessToken = mvcResult.getResponse().getCookie("accessToken");
+                            assertThat(accessToken).isNotNull();    // max-age 를 0으로 해서 반환, 이 단계에서 쿠키 객체는 존재함
+                            assertThat(accessToken.getMaxAge()).isEqualTo(0);
+
+                            Cookie apiKey = mvcResult.getResponse().getCookie("apiKey");
+                            assertThat(apiKey).isNotNull();
+                            assertThat(apiKey.getMaxAge()).isEqualTo(0);
+                        }
+                );
     }
 }
