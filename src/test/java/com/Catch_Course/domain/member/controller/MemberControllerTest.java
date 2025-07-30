@@ -3,6 +3,7 @@ package com.Catch_Course.domain.member.controller;
 import com.Catch_Course.domain.member.entity.Member;
 import com.Catch_Course.domain.member.service.MemberService;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.servlet.http.Cookie;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -21,8 +22,7 @@ import java.util.Map;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 
 @SpringBootTest
@@ -124,10 +124,9 @@ class MemberControllerTest {
                 ).andDo(print());
     }
 
-
     @Test
     @DisplayName("내 정보 조회 - accessToken")
-    void  me() throws Exception {
+    void me() throws Exception {
         ResultActions resultActions = meRequest(token);
 
         resultActions
@@ -150,5 +149,36 @@ class MemberControllerTest {
                 .andExpect(jsonPath("$.code").value("200-1"))
                 .andExpect(jsonPath("$.msg").value("내 정보 조회가 완료되었습니다."));
 
+    }
+
+    private ResultActions logoutRequest(String accessToken) throws Exception {
+        return mvc
+                .perform(
+                        delete("/api/members/logout")
+                                .header("Authorization", "Bearer " + accessToken)
+                ).andDo(print());
+    }
+
+    private ResultActions meRequestByCookie(String accessToken) throws Exception {
+        return mvc
+                .perform(
+                        get("/api/members/me")
+                                .cookie(new Cookie("accessToken", accessToken))
+
+                ).andDo(print());
+    }
+
+    @Test
+    @DisplayName("로그아웃 - 쿠키 삭제")
+    void logout() throws Exception {
+        ResultActions resultActions = logoutRequest(token);
+
+        resultActions
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value("200-1"))
+                .andExpect(jsonPath("$.msg").value("로그아웃이 완료되었습니다."))
+                .andExpect(cookie().value("accessToken", (String) null))
+                .andExpect(cookie().value("apiKey", (String) null))
+        ;
     }
 }

@@ -98,7 +98,7 @@ public class MemberController {
     }
 
     @Operation(summary = "로그아웃")
-    @GetMapping("/logout")
+    @DeleteMapping("/logout")
     public RsData<Void> logout() {
 
         // 쿠키에서 제거
