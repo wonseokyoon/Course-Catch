@@ -1,9 +1,9 @@
 package com.Catch_Course.domain.course.controller;
 
-import com.Catch_Course.domain.member.entity.Member;
 import com.Catch_Course.domain.course.dto.CourseDto;
 import com.Catch_Course.domain.course.entity.Course;
 import com.Catch_Course.domain.course.service.CourseService;
+import com.Catch_Course.domain.member.entity.Member;
 import com.Catch_Course.global.Rq;
 import com.Catch_Course.global.dto.RsData;
 import com.Catch_Course.global.exception.ServiceException;
@@ -53,7 +53,7 @@ public class CourseController {
     public RsData<CourseDto> getItem(@PathVariable long id) {
 
         Course course = courseService.getItem(id)
-                .orElseThrow(() -> new ServiceException("404","존재하지 않는 강의입니다."));
+                .orElseThrow(() -> new ServiceException("404", "존재하지 않는 강의입니다."));
 
         return new RsData<>(
                 "200-1",
@@ -68,11 +68,11 @@ public class CourseController {
     @DeleteMapping("/{id}")
     public RsData<Void> delete(@PathVariable long id) {
 
-        Member member = rq.getMember();
+        Member dummyMember = rq.getDummyMember();        // 더미 유저 객체(id,username,authorities 만 있음, 필요하면 DB에서 꺼내씀)
         Course course = courseService.getItem(id)
-                .orElseThrow(() -> new ServiceException("404","존재하지 않는 강의입니다."));
+                .orElseThrow(() -> new ServiceException("404", "존재하지 않는 강의입니다."));
 
-        course.canDelete(member);
+        course.canDelete(dummyMember);
         courseService.delete(course);
 
         return new RsData<>(
@@ -95,15 +95,15 @@ public class CourseController {
     public RsData<Void> modify(@PathVariable long id, @RequestBody @Valid ModifyReqBody body
     ) {
 
-        Member member = rq.getMember();
+        Member dummyMember = rq.getDummyMember();
         Course course = courseService.getItem(id)
-                .orElseThrow(() -> new ServiceException("404","존재하지 않는 강의입니다."));
+                .orElseThrow(() -> new ServiceException("404", "존재하지 않는 강의입니다."));
 
-        if (!course.getInstructor().getId().equals(member.getId())) {
+        if (!course.getInstructor().getId().equals(dummyMember.getId())) {
             throw new ServiceException("403-1", "자신이 작성한 글만 수정 가능합니다.");
         }
 
-        course.canModify(member);
+        course.canModify(dummyMember);
         courseService.modify(course, body.title(), body.content(), body.capacity());
         return new RsData<>(
                 "200-1",
@@ -125,13 +125,30 @@ public class CourseController {
     @PostMapping
     public RsData<CourseDto> write(@RequestBody @Valid WriteReqBody body) {
 
-        Member member = rq.getMember();
-        Course course = courseService.write(member, body.title(), body.content(), body.capacity());
+        Member dummyMember = rq.getDummyMember();
+        Course course = courseService.write(dummyMember, body.title(), body.content(), body.capacity());
 
         return new RsData<>(
                 "200-1",
                 "강의 생성이 완료되었습니다.",
                 new CourseDto(course)
+        );
+    }
+
+    record StatisticsResBody(long courseCount, long publishedCount) {
+    }
+
+    @Operation(
+            summary = "집계 페이지",
+            description = "관리자만 접근 가능한 집계 페이지"
+    )
+    @GetMapping("statistics")
+    public RsData<StatisticsResBody> getStatistics() {
+
+        return new RsData<>(
+                "200-1",
+                "통계 조회가 완료되었습니다.",
+                new StatisticsResBody(20, 10)
         );
     }
 }

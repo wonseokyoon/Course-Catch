@@ -5,6 +5,7 @@ import com.Catch_Course.domain.member.repository.MemberRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.util.Map;
 import java.util.Optional;
 
 @Service
@@ -12,6 +13,7 @@ import java.util.Optional;
 public class MemberService {
 
     private final MemberRepository memberRepository;
+    private final AuthTokenService authTokenService;
 
     public Member join(String username, String password, String nickname) {
         Member member = Member.builder()
@@ -39,4 +41,36 @@ public class MemberService {
     public Optional<Member> findByApiKey(String apiKey) {
         return memberRepository.findByApiKey(apiKey);
     }
+
+    // apiKey + accessToken
+    public String getAuthToken(Member member) {
+
+        String accessToken = authTokenService.createAccessToken(member);
+        String apiKey = member.getApiKey();
+
+        return apiKey + " " + accessToken;  // apiKey 와 accessToken 같이 반환
+    }
+
+    public Optional<Member> findMemberByAccessToken(String accessToken) {
+        // 1. payload 가져옴
+        Map<String, Object> payload = authTokenService.getPayload(accessToken);
+
+        if (payload == null) return Optional.empty();
+
+        // 2. payload 에서 id를 꺼냄
+        Long id = (Long) payload.get("id");
+        String username = (String) payload.get("username");
+
+        return Optional.of(
+                Member.builder()
+                        .id(id)
+                        .username(username)
+                        .build()
+        );
+    }
+
+    public String getAccessToken(Member member) {
+        return authTokenService.createAccessToken(member);
+    }
+
 }
