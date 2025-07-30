@@ -114,4 +114,20 @@ public class Rq {
 
         return null;
     }
+
+    public void removeCookie(String name) {
+        // 원칙적으로 쿠키를 서버에서 삭제하는것은 불가능
+        Cookie cookie = new Cookie(name,null);
+
+        cookie.setDomain("localhost");
+        cookie.setPath("/");
+        cookie.setHttpOnly(true);
+        cookie.setSecure(true);
+        cookie.setAttribute("SameSite", "Strict");
+
+        // 즉시만료시킨 쿠키를 덮어씌움
+        cookie.setMaxAge(0);
+
+        response.addCookie(cookie);
+    }
 }

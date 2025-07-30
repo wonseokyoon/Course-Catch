@@ -96,4 +96,18 @@ public class MemberController {
                 new MemberDto(member)
         );
     }
+
+    @Operation(summary = "로그아웃")
+    @GetMapping("/logout")
+    public RsData<Void> logout() {
+
+        // 쿠키에서 제거
+        rq.removeCookie("accessToken");
+        rq.removeCookie("apiKey");
+
+        return new RsData<>(
+                "200-1",
+                "로그아웃이 완료되었습니다."
+        );
+    }
 }
