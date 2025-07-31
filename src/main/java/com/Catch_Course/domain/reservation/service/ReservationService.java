@@ -10,6 +10,8 @@ import com.Catch_Course.global.exception.ServiceException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.util.Optional;
+
 @Service
 @RequiredArgsConstructor
 public class ReservationService {
@@ -23,8 +25,20 @@ public class ReservationService {
         Course course = courseRepository.findById(courseId)
                 .orElseThrow(() -> new ServiceException("404-1", "존재하지 않는 강의입니다."));
 
-        if (reservationRepository.existsByStudentAndCourse(member, course)) {
-            throw new ServiceException("409-1","이미 신청한 강의입니다.");
+        Optional<Reservation> optionalReservation = reservationRepository.findByStudentAndCourse(member, course);
+
+        if (optionalReservation.isPresent()) {
+
+            if(optionalReservation.get().getStatus().equals(ReservationStatus.COMPLETED)){
+                throw new ServiceException("409-1","이미 신청한 강의입니다.");
+            } else if (optionalReservation.get().getStatus().equals(ReservationStatus.WAITING)) {
+                // todo 대기열 참가
+            }
+
+            course.increaseReservation();
+            courseRepository.save(course);
+            optionalReservation.get().setStatus(ReservationStatus.COMPLETED);   // 상태 변경
+            return reservationRepository.save(optionalReservation.get());
         }
 
         course.increaseReservation();   // 신청 인원 증가

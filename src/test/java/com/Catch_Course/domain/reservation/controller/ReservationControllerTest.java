@@ -21,6 +21,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
 @SpringBootTest
 @ActiveProfiles("test")
 @AutoConfigureMockMvc
@@ -61,9 +62,9 @@ class ReservationControllerTest {
     void reserve() throws Exception {
         Long courseId = 1L;
         ResultActions resultActions = mvc.perform(
-                        post("/api/reserve?courseId=%d".formatted(courseId))
-                                .header("Authorization", "Bearer " + token)
-                ).andDo(print());
+                post("/api/reserve?courseId=%d".formatted(courseId))
+                        .header("Authorization", "Bearer " + token)
+        ).andDo(print());
 
         resultActions
                 .andExpect(status().isOk())
@@ -195,7 +196,6 @@ class ReservationControllerTest {
                 .andExpect(jsonPath("$.code").value("404-1"))
                 .andExpect(jsonPath("$.msg").value("존재하지 않는 강의입니다."));
     }
-
 
 
 }
