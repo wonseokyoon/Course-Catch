@@ -9,7 +9,6 @@ import com.Catch_Course.global.dto.RsData;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 @Tag(name = "reservationController", description = "수강신청 관련 API")
@@ -28,7 +27,6 @@ public class ReservationController {
 
     @Operation(summary = "수강 신청")
     @PostMapping()
-    @Transactional
     public RsData<ReservationDto> reserve(@RequestParam Long courseId) {
 
         Member member = rq.getMember(rq.getDummyMember());  // 실제 멤버 객체
@@ -44,7 +42,6 @@ public class ReservationController {
 
     @Operation(summary = "수강 신청 취소")
     @DeleteMapping()
-    @Transactional
     public RsData<ReservationDto> cancelReservation(@RequestParam Long courseId) {
 
         Member member = rq.getMember(rq.getDummyMember());  // 실제 멤버 객체

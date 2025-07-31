@@ -9,11 +9,13 @@ import com.Catch_Course.domain.reservation.repository.ReservationRepository;
 import com.Catch_Course.global.exception.ServiceException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
+@Transactional
 public class ReservationService {
 
     private final CourseRepository courseRepository;
