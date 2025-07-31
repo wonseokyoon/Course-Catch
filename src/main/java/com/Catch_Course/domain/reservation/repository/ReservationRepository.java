@@ -10,8 +10,5 @@ import java.util.Optional;
 
 @Repository
 public interface ReservationRepository extends JpaRepository<Reservation, Long> {
-
-    boolean existsByStudentAndCourse(Member member, Course course);
-
     Optional<Reservation> findByStudentAndCourse(Member member, Course course);
 }

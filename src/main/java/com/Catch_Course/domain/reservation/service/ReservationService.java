@@ -22,7 +22,7 @@ public class ReservationService {
 
     public Reservation reserve(Member member, Long courseId) {
 
-        Course course = courseRepository.findById(courseId)
+        Course course = courseRepository.findByIdWithPessimisticLock(courseId)  // 비관적 Lock 을 걸고 조회
                 .orElseThrow(() -> new ServiceException("404-1", "존재하지 않는 강의입니다."));
 
         Optional<Reservation> optionalReservation = reservationRepository.findByStudentAndCourse(member, course);
@@ -61,7 +61,7 @@ public class ReservationService {
 
     public Reservation cancelReserve(Member member, Long courseId) {
 
-        Course course = courseRepository.findById(courseId)
+        Course course = courseRepository.findByIdWithPessimisticLock(courseId)  // 잠금
                 .orElseThrow(() -> new ServiceException("404-1", "존재하지 않는 강의입니다."));
 
         Reservation reservation = reservationRepository.findByStudentAndCourse(member, course)
