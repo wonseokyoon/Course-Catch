@@ -4,22 +4,26 @@ import com.Catch_Course.domain.course.dto.CourseDto;
 import com.Catch_Course.domain.course.service.CourseService;
 import com.Catch_Course.domain.member.entity.Member;
 import com.Catch_Course.domain.member.service.MemberService;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithUserDetails;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.Map;
 
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -195,9 +199,44 @@ class CourseControllerTest {
     void modify() {
     }
 
+    private ResultActions writeRequest(String title, String content, long capacity) throws Exception {
+        Map<String, Object> requestBody = Map.of("title", title, "content", content, "capacity", capacity);
+
+        // Map -> Json 변환
+        ObjectMapper objectMapper = new ObjectMapper();
+        String json = objectMapper.writeValueAsString(requestBody);
+
+        return mvc
+                .perform(
+                        post("/api/courses")
+                                .header("Authorization", "Bearer " + token)
+                                .content(json)
+                                .contentType(new MediaType(MediaType.APPLICATION_JSON, StandardCharsets.UTF_8))
+                ).andDo(print());
+    }
+
     @Test
     @DisplayName("강의 생성")
-    void write() {
+    void write() throws Exception {
+        String title = "테스트 제목";
+        String content = "테스트 내용";
+        long capacity = 100;
+
+        ResultActions resultActions = writeRequest(title, content, capacity);
+
+        resultActions
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value("200-1"))
+                .andExpect(jsonPath("$.msg").value("강의 생성이 완료되었습니다."));
+
+        ObjectMapper mapper = new ObjectMapper();
+        String jsonContent = resultActions.andReturn().getResponse().getContentAsString();      // 문자열 응답
+        JsonNode json = mapper.readTree(jsonContent);   // 파싱
+        long courseId = json.get("data").get("id").asLong();  // data 필드의 id 필드
+
+        // DB 에서 실제 강의 목록 가져옴
+        CourseDto courseDto = new CourseDto(courseService.getItem(courseId).get());
+        checkCourse(courseDto, resultActions);
     }
 
     String adminLogin() {
@@ -239,7 +278,6 @@ class CourseControllerTest {
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.code").value("403-1"))
                 .andExpect(jsonPath("$.msg").value("접근 권한이 없습니다."));
-
     }
 
 }

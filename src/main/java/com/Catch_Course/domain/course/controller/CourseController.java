@@ -12,6 +12,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 import org.hibernate.validator.constraints.Length;
 import org.springframework.transaction.annotation.Transactional;
@@ -119,7 +120,7 @@ public class CourseController {
     record WriteReqBody(
             @NotBlank @Length(min = 3) String title,
             @NotBlank @Length(min = 3) String content,
-            @NotBlank @Min(1) long capacity
+            @NotNull @Min(1) long capacity
     ) {
     }
 
@@ -127,6 +128,7 @@ public class CourseController {
             summary = "강의 생성"
     )
     @PostMapping
+    @Transactional
     public RsData<CourseDto> write(@RequestBody @Valid WriteReqBody body) {
 
         Member dummyMember = rq.getDummyMember();
