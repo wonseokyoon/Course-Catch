@@ -89,7 +89,7 @@ public class CourseController {
 
     record ModifyReqBody(@NotBlank @Length(min = 3) String title,
                          @NotBlank @Length(min = 3) String content,
-                         @NotBlank @Min(1) long capacity
+                         @NotNull @Min(1) long capacity
     ) {
     }
 
@@ -97,6 +97,7 @@ public class CourseController {
             summary = "강의 수정"
     )
     @PutMapping("{id}")
+    @Transactional
     public RsData<Void> modify(@PathVariable long id, @RequestBody @Valid ModifyReqBody body
     ) {
 

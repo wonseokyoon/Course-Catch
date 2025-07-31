@@ -194,9 +194,36 @@ class CourseControllerTest {
                 .andExpect(jsonPath("$.msg").value("존재하지 않는 강의입니다."));
     }
 
+    private ResultActions modifyRequest(long id, String title, String content, long capacity) throws Exception {
+        Map<String, Object> requestBody = Map.of("title", title, "content", content, "capacity", capacity);
+
+        // Map -> Json 변환
+        ObjectMapper objectMapper = new ObjectMapper();
+        String json = objectMapper.writeValueAsString(requestBody);
+
+        return mvc
+                .perform(
+                        put("/api/courses/%d".formatted(id))
+                                .header("Authorization", "Bearer " + token)
+                                .content(json)
+                                .contentType(new MediaType(MediaType.APPLICATION_JSON, StandardCharsets.UTF_8))
+                ).andDo(print());
+    }
+
     @Test
     @DisplayName("강의 수정 - 작성자만 수정 가능")
-    void modify() {
+    void modifyItem() throws Exception {
+        long courseId = 1L;
+        String title = "수정된 제목";
+        String content = "수정된 내용";
+        long capacity = 50;
+
+        ResultActions resultActions = modifyRequest(courseId,title,content,capacity);
+
+        resultActions
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value("200-1"))
+                .andExpect(jsonPath("$.msg").value("%d번 글 수정이 완료되었습니다.".formatted(courseId)));
     }
 
     private ResultActions writeRequest(String title, String content, long capacity) throws Exception {
