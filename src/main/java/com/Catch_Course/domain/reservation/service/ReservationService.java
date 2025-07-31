@@ -33,8 +33,29 @@ public class ReservationService {
         Reservation reservation = Reservation.builder()
                 .student(member)
                 .course(course)
-                .status(ReservationStatus.COMPLETE)
+                .status(ReservationStatus.COMPLETED)
                 .build();
+
+        return reservationRepository.save(reservation);
+    }
+
+    public Reservation cancelReserve(Member member, Long courseId) {
+
+        Course course = courseRepository.findById(courseId)
+                .orElseThrow(() -> new ServiceException("404-1", "존재하지 않는 강의입니다."));
+
+        Reservation reservation = reservationRepository.findByStudentAndCourse(member, course)
+                .orElseThrow(() -> new ServiceException("404-3","수강 신청 이력이 없습니다."));
+
+        if (reservation.getStatus() == ReservationStatus.CANCELED) {
+            throw new ServiceException("409-2", "이미 취소된 수강 신청입니다.");
+        }
+
+        course.decreaseReservation();   // 신청 인원 감소
+        courseRepository.save(course);  // 저장
+
+        reservation.setStatus(ReservationStatus.CANCELED);    // 상태 관리로 삭제 처리
+//        reservationRepository.delete(reservation);        // 나중에 필요하면 삭제 처리
 
         return reservationRepository.save(reservation);
     }

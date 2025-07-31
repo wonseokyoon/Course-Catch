@@ -6,8 +6,12 @@ import com.Catch_Course.domain.reservation.entity.Reservation;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
+import java.util.Optional;
+
 @Repository
 public interface ReservationRepository extends JpaRepository<Reservation, Long> {
 
     boolean existsByStudentAndCourse(Member member, Course course);
+
+    Optional<Reservation> findByStudentAndCourse(Member member, Course course);
 }

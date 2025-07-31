@@ -10,10 +10,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @Tag(name = "reservationController", description = "수강신청 관련 API")
 @RestController
@@ -41,6 +38,21 @@ public class ReservationController {
         return new RsData<>(
                 "200-1",
                 "신청이 완료되었습니다.",
+                new ReservationDto(reservation)
+        );
+    }
+
+    @Operation(summary = "수강 신청 취소")
+    @DeleteMapping()
+    @Transactional
+    public RsData<ReservationDto> cancelReservation(@RequestParam Long courseId) {
+
+        Member member = rq.getMember(rq.getDummyMember());  // 실제 멤버 객체
+        Reservation reservation = reservationService.cancelReserve(member, courseId);
+
+        return new RsData<>(
+                "200-1",
+                "수강 취소되었습니다.",
                 new ReservationDto(reservation)
         );
     }
