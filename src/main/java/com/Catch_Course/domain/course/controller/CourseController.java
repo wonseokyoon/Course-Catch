@@ -1,6 +1,7 @@
 package com.Catch_Course.domain.course.controller;
 
 import com.Catch_Course.domain.course.dto.CourseDto;
+import com.Catch_Course.domain.course.dto.PageDto;
 import com.Catch_Course.domain.course.entity.Course;
 import com.Catch_Course.domain.course.service.CourseService;
 import com.Catch_Course.domain.member.entity.Member;
@@ -15,10 +16,9 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 import org.hibernate.validator.constraints.Length;
+import org.springframework.data.domain.Page;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
 
 @Tag(name = "CourseController", description = "강의 관련 API")
 @RestController
@@ -34,17 +34,18 @@ public class CourseController {
     )
     @GetMapping
     @Transactional(readOnly = true)
-    public RsData<List<CourseDto>> getItems() {
+    public RsData<PageDto> getItems(@RequestParam(defaultValue = "1") int page,
+                                    @RequestParam(defaultValue = "10") int pageSize
+//                                            @RequestParam(defaultValue = "title") int keywordType,
+//                                            @RequestParam(defaultValue = "") int keyword
+    ) {
 
-        List<Course> courses = courseService.getItems();
-        List<CourseDto> courseDtos = courses.stream()
-                .map(CourseDto::new)
-                .toList();
+        Page<Course> coursePage = courseService.getItems(page,pageSize);
 
         return new RsData<>(
                 "200-1",
                 "강의 목록 조회가 완료되었습니다.",
-                courseDtos
+                new PageDto(coursePage)
         );
     }
 

@@ -4,10 +4,12 @@ import com.Catch_Course.domain.course.entity.Course;
 import com.Catch_Course.domain.course.repository.CourseRepository;
 import com.Catch_Course.domain.member.entity.Member;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -29,8 +31,9 @@ public class CourseService {
         );
     }
 
-    public List<Course> getItems() {
-        return courseRepository.findAll();
+    public Page<Course> getItems(int page, int pageSize) {
+        Pageable pageable = PageRequest.of(page-1, pageSize);
+        return courseRepository.findAll(pageable);
     }
 
     public Optional<Course> getItem(long id) {

@@ -13,6 +13,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.data.domain.Page;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithUserDetails;
 import org.springframework.test.context.ActiveProfiles;
@@ -54,18 +55,18 @@ class CourseControllerTest {
         token = memberService.getAuthToken(loginedMember);
     }
 
-    private void checkCourses(List<CourseDto> courses, ResultActions resultActions) throws Exception {
+    private void checkCourses(List<Course> courses, ResultActions resultActions) throws Exception {
         for (int i = 0; i < courses.size(); i++) {
 
-            CourseDto course = courses.get(i);
+            Course course = courses.get(i);
 
             resultActions
-                    .andExpect(jsonPath("$.data[%d]".formatted(i)).exists())
-                    .andExpect(jsonPath("$.data[%d].id".formatted(i)).value(course.getId()))
-                    .andExpect(jsonPath("$.data[%d].title".formatted(i)).value(course.getTitle()))
-                    .andExpect(jsonPath("$.data[%d].instructorId".formatted(i)).value(course.getInstructorId()))
-                    .andExpect(jsonPath("$.data[%d].instructorName".formatted(i)).value(course.getInstructorName()))
-                    .andExpect(jsonPath("$.data[%d].capacity".formatted(i)).value(course.getCapacity()))
+                    .andExpect(jsonPath("$.data.items[%d]".formatted(i)).exists())
+                    .andExpect(jsonPath("$.data.items[%d].id".formatted(i)).value(course.getId()))
+                    .andExpect(jsonPath("$.data.items[%d].title".formatted(i)).value(course.getTitle()))
+                    .andExpect(jsonPath("$.data.items[%d].instructorId".formatted(i)).value(course.getInstructor().getId()))
+                    .andExpect(jsonPath("$.data.items[%d].instructorName".formatted(i)).value(course.getInstructor().getNickname()))
+                    .andExpect(jsonPath("$.data.items[%d].capacity".formatted(i)).value(course.getCapacity()))
             ;
         }
     }
@@ -85,12 +86,9 @@ class CourseControllerTest {
                 .andExpect(jsonPath("$.msg").value("강의 목록 조회가 완료되었습니다."));
 
         // DB 에서 실제 강의 목록 가져옴
-        List<CourseDto> courseDtos = courseService.getItems()
-                .stream()
-                .map(CourseDto::new)
-                .toList();
-
-        checkCourses(courseDtos, resultActions);
+        Page<Course> coursePage =  courseService.getItems(1,10);
+        List<Course> courses = coursePage.getContent();
+        checkCourses(courses, resultActions);
     }
 
     private void checkCourse(CourseDto course, ResultActions resultActions) throws Exception {
