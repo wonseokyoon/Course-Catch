@@ -25,8 +25,9 @@ import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
 
-import static com.Catch_Course.domain.course.controller.KeywordType.title;
+import static com.Catch_Course.domain.course.controller.KeywordType.*;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.Matchers.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -65,6 +66,7 @@ class CourseControllerTest {
                     .andExpect(jsonPath("$.data.items[%d]".formatted(i)).exists())
                     .andExpect(jsonPath("$.data.items[%d].id".formatted(i)).value(course.getId()))
                     .andExpect(jsonPath("$.data.items[%d].title".formatted(i)).value(course.getTitle()))
+                    .andExpect(jsonPath("$.data.items[%d].content".formatted(i)).value(course.getContent()))
                     .andExpect(jsonPath("$.data.items[%d].instructorId".formatted(i)).value(course.getInstructor().getId()))
                     .andExpect(jsonPath("$.data.items[%d].instructorName".formatted(i)).value(course.getInstructor().getNickname()))
                     .andExpect(jsonPath("$.data.items[%d].capacity".formatted(i)).value(course.getCapacity()))
@@ -89,7 +91,7 @@ class CourseControllerTest {
                 .andExpect(jsonPath("$.data.currentPage").value(1));
 
         // DB 에서 실제 강의 목록 가져옴
-        Page<Course> coursePage =  courseService.getItems(1,10,title,"");
+        Page<Course> coursePage = courseService.getItems(1, 10, title, "");
         List<Course> courses = coursePage.getContent();
         checkCourses(courses, resultActions);
     }
@@ -100,7 +102,7 @@ class CourseControllerTest {
         int page = 3;
         int pageSize = 8;
         ResultActions resultActions = mvc.perform(
-                        get("/api/courses?page="+page+"&pageSize="+pageSize)
+                        get("/api/courses?page=" + page + "&pageSize=" + pageSize)
                                 .header("Authorization", "Bearer " + token)
                 )
                 .andDo(print());
@@ -113,9 +115,67 @@ class CourseControllerTest {
                 .andExpect(jsonPath("$.data.currentPage").value(page));
 
         // DB 에서 실제 강의 목록 가져옴
-        Page<Course> coursePage =  courseService.getItems(page,pageSize,title,"");
+        Page<Course> coursePage = courseService.getItems(page, pageSize, title, "");
         List<Course> courses = coursePage.getContent();
         checkCourses(courses, resultActions);
+    }
+
+    @Test
+    @DisplayName("강의 목록 조회 - 검색 by 제목")
+    void getItems3() throws Exception {
+        String keyword = "국어";
+        ResultActions resultActions = mvc.perform(
+                        get("/api/courses?&keyword=" + keyword)
+                                .header("Authorization", "Bearer " + token)
+                )
+                .andDo(print());
+
+        resultActions
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value("200-1"))
+                .andExpect(jsonPath("$.msg").value("강의 목록 조회가 완료되었습니다."))
+                .andExpect(jsonPath("$.data.items[*].title").value(everyItem(containsString(keyword))))
+        ;
+
+    }
+
+    @Test
+    @DisplayName("강의 목록 조회 - 검색 by 내용")
+    void getItems4() throws Exception {
+        KeywordType keywordType = content;
+        String keyword = "비문학";
+        ResultActions resultActions = mvc.perform(
+                        get("/api/courses?keywordType=" + keywordType + "&keyword=" + keyword)
+                                .header("Authorization", "Bearer " + token)
+                )
+                .andDo(print());
+
+        resultActions
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value("200-1"))
+                .andExpect(jsonPath("$.msg").value("강의 목록 조회가 완료되었습니다."))
+                .andExpect(jsonPath("$.data.items[*].content").value(everyItem(containsString(keyword))))
+        ;
+    }
+
+    @Test
+    @DisplayName("강의 목록 조회 - 검색 by 작성자")
+    void getItems5() throws Exception {
+        KeywordType keywordType = instructor;
+        String keyword = "유저1";
+        ResultActions resultActions = mvc.perform(
+                        get("/api/courses?keywordType=" + keywordType + "&keyword=" + keyword)
+                                .header("Authorization", "Bearer " + token)
+                )
+                .andDo(print());
+
+        resultActions
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value("200-1"))
+                .andExpect(jsonPath("$.msg").value("강의 목록 조회가 완료되었습니다."))
+                .andExpect(jsonPath("$.data.items[*].instructorName").value(everyItem(equalTo(keyword))))   // 작성자는 일치해야함
+        ;
+
     }
 
     private void checkCourse(CourseDto course, ResultActions resultActions) throws Exception {
@@ -245,7 +305,7 @@ class CourseControllerTest {
         String content = "수정된 내용";
         long capacity = 50;
 
-        ResultActions resultActions = modifyRequest(courseId,title,content,capacity);
+        ResultActions resultActions = modifyRequest(courseId, title, content, capacity);
 
         resultActions
                 .andExpect(status().isOk())
@@ -266,7 +326,7 @@ class CourseControllerTest {
         String content = "수정된 내용";
         long capacity = 50;
 
-        ResultActions resultActions = modifyRequest(courseId,title,content,capacity);
+        ResultActions resultActions = modifyRequest(courseId, title, content, capacity);
 
         resultActions
                 .andExpect(status().isForbidden())
@@ -282,7 +342,7 @@ class CourseControllerTest {
         String content = "수정된 내용";
         long capacity = 50;
 
-        ResultActions resultActions = modifyRequest(courseId,title,content,capacity);
+        ResultActions resultActions = modifyRequest(courseId, title, content, capacity);
 
         resultActions
                 .andExpect(status().isNotFound())
