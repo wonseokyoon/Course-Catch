@@ -28,27 +28,33 @@ public class ReservationService {
         Optional<Reservation> optionalReservation = reservationRepository.findByStudentAndCourse(member, course);
 
         if (optionalReservation.isPresent()) {
-
-            if(optionalReservation.get().getStatus().equals(ReservationStatus.COMPLETED)){
-                throw new ServiceException("409-1","이미 신청한 강의입니다.");
-            } else if (optionalReservation.get().getStatus().equals(ReservationStatus.WAITING)) {
-                // todo 대기열 참가
-            }
-
-            course.increaseReservation();
-            courseRepository.save(course);
-            optionalReservation.get().setStatus(ReservationStatus.COMPLETED);   // 상태 변경
-            return reservationRepository.save(optionalReservation.get());
+            // 신청 내역이 존재하는 경우 처리 메서드
+            return handleExistingReservation(optionalReservation.get(),course);
         }
 
-        course.increaseReservation();   // 신청 인원 증가
-        courseRepository.save(course);  // 저장
+        course.increaseReservation();
+        courseRepository.save(course);
 
         Reservation reservation = Reservation.builder()
                 .student(member)
                 .course(course)
                 .status(ReservationStatus.COMPLETED)
                 .build();
+
+        return reservationRepository.save(reservation);
+    }
+
+    private Reservation handleExistingReservation(Reservation reservation,Course course) {
+
+        if(reservation.getStatus().equals(ReservationStatus.COMPLETED)){
+            throw new ServiceException("409-1","이미 신청한 강의입니다.");
+        } else if (reservation.getStatus().equals(ReservationStatus.WAITING)) {
+            // todo 대기열 참가
+        }
+
+        course.increaseReservation();
+        courseRepository.save(course);
+        reservation.setStatus(ReservationStatus.COMPLETED);   // 상태 변경
 
         return reservationRepository.save(reservation);
     }
@@ -65,8 +71,8 @@ public class ReservationService {
             throw new ServiceException("409-2", "이미 취소된 수강 신청입니다.");
         }
 
-        course.decreaseReservation();   // 신청 인원 감소
-        courseRepository.save(course);  // 저장
+        course.decreaseReservation();
+        courseRepository.save(course);
 
         reservation.setStatus(ReservationStatus.CANCELED);    // 상태 관리로 삭제 처리
 //        reservationRepository.delete(reservation);        // 나중에 필요하면 삭제 처리
