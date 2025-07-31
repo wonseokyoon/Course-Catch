@@ -147,6 +147,55 @@ class ReservationControllerTest {
                 .andExpect(jsonPath("$.msg").value("수강 취소되었습니다."));
     }
 
+    @Test
+    @DisplayName("수강 취소 실패 - 이미 취소")
+    void cancelReservation2() throws Exception {
+        Long courseId = 1L;
+        cancelReservation();    // 수강 취소
+
+        ResultActions resultActions = mvc.perform(
+                delete("/api/reserve?courseId=%d".formatted(courseId))
+                        .header("Authorization", "Bearer " + token)
+        ).andDo(print());
+
+        resultActions
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("409-2"))
+                .andExpect(jsonPath("$.msg").value("이미 취소된 수강 신청입니다."));
+    }
+
+    @Test
+    @DisplayName("수강 취소 실패 - 이력이 없음")
+    void cancelReservation3() throws Exception {
+        Long courseId = 3L;
+
+        ResultActions resultActions = mvc.perform(
+                delete("/api/reserve?courseId=%d".formatted(courseId))
+                        .header("Authorization", "Bearer " + token)
+        ).andDo(print());
+
+        resultActions
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("404-3"))
+                .andExpect(jsonPath("$.msg").value("수강 신청 이력이 없습니다."));
+    }
+
+    @Test
+    @DisplayName("수강 취소 실패 - 존재하지 않는 강의")
+    void cancelReservation4() throws Exception {
+        Long courseId = 999L;
+
+        ResultActions resultActions = mvc.perform(
+                delete("/api/reserve?courseId=%d".formatted(courseId))
+                        .header("Authorization", "Bearer " + token)
+        ).andDo(print());
+
+        resultActions
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("404-1"))
+                .andExpect(jsonPath("$.msg").value("존재하지 않는 강의입니다."));
+    }
+
 
 
 }
