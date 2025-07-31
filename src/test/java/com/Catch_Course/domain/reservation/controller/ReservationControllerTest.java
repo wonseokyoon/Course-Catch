@@ -16,6 +16,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.transaction.annotation.Transactional;
 
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -128,4 +129,24 @@ class ReservationControllerTest {
                 .andExpect(jsonPath("$.code").value("406-1"))
                 .andExpect(jsonPath("$.msg").value("남은 좌석이 없습니다."));
     }
+
+    @Test
+    @DisplayName("수강 취소")
+    void cancelReservation() throws Exception {
+        Long courseId = 1L;
+        reservationService.reserve(loginedMember, courseId);    // 수강 신청
+
+        ResultActions resultActions = mvc.perform(
+                delete("/api/reserve?courseId=%d".formatted(courseId))
+                        .header("Authorization", "Bearer " + token)
+        ).andDo(print());
+
+        resultActions
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value("200-1"))
+                .andExpect(jsonPath("$.msg").value("수강 취소되었습니다."));
+    }
+
+
+
 }
