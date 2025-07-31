@@ -42,6 +42,8 @@ public class CourseController {
 
         Page<Course> coursePage = courseService.getItems(page,pageSize,keywordType,keyword);
 
+        if(coursePage.isEmpty()) throw new ServiceException("404-2","일치하는 강의가 없습니다.");
+
         return new RsData<>(
                 "200-1",
                 "강의 목록 조회가 완료되었습니다.",

@@ -33,9 +33,8 @@ public class CourseService {
     }
 
     public Page<Course> getItems(int page, int pageSize, KeywordType keywordType, String keyword) {
-        Pageable pageable = PageRequest.of(page-1, pageSize);
 
-//        if(keyword.isBlank()) return courseRepository.findAll(pageable);    // 검색어가 없는 경우
+        Pageable pageable = PageRequest.of(page-1, pageSize);
 
         switch (keywordType) {
             case instructor -> {

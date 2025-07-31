@@ -136,7 +136,6 @@ class CourseControllerTest {
                 .andExpect(jsonPath("$.msg").value("강의 목록 조회가 완료되었습니다."))
                 .andExpect(jsonPath("$.data.items[*].title").value(everyItem(containsString(keyword))))
         ;
-
     }
 
     @Test
@@ -175,7 +174,23 @@ class CourseControllerTest {
                 .andExpect(jsonPath("$.msg").value("강의 목록 조회가 완료되었습니다."))
                 .andExpect(jsonPath("$.data.items[*].instructorName").value(everyItem(equalTo(keyword))))   // 작성자는 일치해야함
         ;
+    }
 
+    @Test
+    @DisplayName("강의 목록 조회 - 검색 실패")
+    void getItems6() throws Exception {
+        KeywordType keywordType = instructor;
+        String keyword = "유저";
+        ResultActions resultActions = mvc.perform(
+                        get("/api/courses?keywordType=" + keywordType + "&keyword=" + keyword)
+                                .header("Authorization", "Bearer " + token)
+                )
+                .andDo(print());
+
+        resultActions
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("404-2"))
+                .andExpect(jsonPath("$.msg").value("일치하는 강의가 없습니다."));
     }
 
     private void checkCourse(CourseDto course, ResultActions resultActions) throws Exception {
