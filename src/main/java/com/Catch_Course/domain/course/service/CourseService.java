@@ -28,6 +28,7 @@ public class CourseService {
                         .title(title)
                         .content(content)
                         .capacity(capacity)
+                        .currentRegistration(0)
                         .build()
         );
     }
