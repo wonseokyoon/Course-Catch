@@ -39,12 +39,20 @@ class ReservationControllerTest {
 
     private String token;
     private Member loginedMember;
+    private Member member2;
+    private String token2;
 
     @BeforeEach
     @DisplayName("user1로 로그인 셋업")
     void setUp() {
         loginedMember = memberService.findByUsername("user1").get();
         token = memberService.getAuthToken(loginedMember);
+    }
+
+    @DisplayName("user2로 로그인")
+    void loginUser2() throws Exception {
+        member2 = memberService.findByUsername("user2").get();
+        token2 = memberService.getAuthToken(member2);
     }
 
     @Test
@@ -68,5 +76,56 @@ class ReservationControllerTest {
                 .andExpect(jsonPath("$.data.studentId").value(loginedMember.getId()))
                 .andExpect(jsonPath("$.data.studentName").value(loginedMember.getNickname()))
         ;
+    }
+
+    @Test
+    @DisplayName("수강 신청 실패 - 이미 신청한 강의")
+    void reserve2() throws Exception {
+        Long courseId = 1L;
+        reservationService.reserve(loginedMember, courseId);    // 수강 신청
+
+        ResultActions resultActions = mvc.perform(
+                post("/api/reserve?courseId=%d".formatted(courseId))
+                        .header("Authorization", "Bearer " + token)
+        ).andDo(print());
+
+        resultActions
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("409-1"))
+                .andExpect(jsonPath("$.msg").value("이미 신청한 강의입니다."));
+    }
+
+    @Test
+    @DisplayName("수강 신청 실패 - 없는 강의")
+    void reserve3() throws Exception {
+        Long courseId = 999L;
+        ResultActions resultActions = mvc.perform(
+                post("/api/reserve?courseId=%d".formatted(courseId))
+                        .header("Authorization", "Bearer " + token)
+        ).andDo(print());
+
+        resultActions
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("404-1"))
+                .andExpect(jsonPath("$.msg").value("존재하지 않는 강의입니다."));
+    }
+
+    @Test
+    @DisplayName("수강 신청 실패 - 자리가 없음")
+    void reserve4() throws Exception {
+        Long courseId = 3L;
+        reservationService.reserve(loginedMember, courseId);    // 수강 신청
+
+        loginUser2();   // 계정 바꿔서 로그인
+
+        ResultActions resultActions = mvc.perform(
+                post("/api/reserve?courseId=%d".formatted(courseId))
+                        .header("Authorization", "Bearer " + token2)
+        ).andDo(print());
+
+        resultActions
+                .andExpect(status().isNotAcceptable())
+                .andExpect(jsonPath("$.code").value("406-1"))
+                .andExpect(jsonPath("$.msg").value("남은 좌석이 없습니다."));
     }
 }
