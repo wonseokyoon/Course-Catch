@@ -1,5 +1,6 @@
 package com.Catch_Course.domain.course.service;
 
+import com.Catch_Course.domain.course.controller.KeywordType;
 import com.Catch_Course.domain.course.entity.Course;
 import com.Catch_Course.domain.course.repository.CourseRepository;
 import com.Catch_Course.domain.member.entity.Member;
@@ -31,9 +32,23 @@ public class CourseService {
         );
     }
 
-    public Page<Course> getItems(int page, int pageSize) {
+    public Page<Course> getItems(int page, int pageSize, KeywordType keywordType, String keyword) {
         Pageable pageable = PageRequest.of(page-1, pageSize);
-        return courseRepository.findAll(pageable);
+
+//        if(keyword.isBlank()) return courseRepository.findAll(pageable);    // 검색어가 없는 경우
+
+        switch (keywordType) {
+            case instructor -> {
+                // 이름이 정확히 일치
+                return courseRepository.findAllByInstructor_Nickname(keyword, pageable);
+            }
+            case content -> {
+                return courseRepository.findAllByContentContaining(keyword, pageable);
+            }
+            default -> {    // 기본값: title
+                return courseRepository.findAllByTitleContaining(keyword, pageable);
+            }
+        }
     }
 
     public Optional<Course> getItem(long id) {

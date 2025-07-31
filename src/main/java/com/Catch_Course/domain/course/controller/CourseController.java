@@ -35,12 +35,12 @@ public class CourseController {
     @GetMapping
     @Transactional(readOnly = true)
     public RsData<PageDto> getItems(@RequestParam(defaultValue = "1") int page,
-                                    @RequestParam(defaultValue = "10") int pageSize
-//                                            @RequestParam(defaultValue = "title") int keywordType,
-//                                            @RequestParam(defaultValue = "") int keyword
+                                    @RequestParam(defaultValue = "10") int pageSize,
+                                    @RequestParam(defaultValue = "title") KeywordType keywordType,
+                                    @RequestParam(defaultValue = "") String keyword
     ) {
 
-        Page<Course> coursePage = courseService.getItems(page,pageSize);
+        Page<Course> coursePage = courseService.getItems(page,pageSize,keywordType,keyword);
 
         return new RsData<>(
                 "200-1",

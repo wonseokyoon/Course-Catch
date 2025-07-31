@@ -25,6 +25,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
 
+import static com.Catch_Course.domain.course.controller.KeywordType.title;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
@@ -88,7 +89,7 @@ class CourseControllerTest {
                 .andExpect(jsonPath("$.data.currentPage").value(1));
 
         // DB 에서 실제 강의 목록 가져옴
-        Page<Course> coursePage =  courseService.getItems(1,10);
+        Page<Course> coursePage =  courseService.getItems(1,10,title,"");
         List<Course> courses = coursePage.getContent();
         checkCourses(courses, resultActions);
     }
@@ -112,7 +113,7 @@ class CourseControllerTest {
                 .andExpect(jsonPath("$.data.currentPage").value(page));
 
         // DB 에서 실제 강의 목록 가져옴
-        Page<Course> coursePage =  courseService.getItems(page,pageSize);
+        Page<Course> coursePage =  courseService.getItems(page,pageSize,title,"");
         List<Course> courses = coursePage.getContent();
         checkCourses(courses, resultActions);
     }
