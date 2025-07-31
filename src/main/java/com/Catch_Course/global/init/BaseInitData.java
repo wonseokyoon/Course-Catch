@@ -1,6 +1,5 @@
 package com.Catch_Course.global.init;
 
-import com.Catch_Course.domain.course.entity.Course;
 import com.Catch_Course.domain.course.service.CourseService;
 import com.Catch_Course.domain.member.entity.Member;
 import com.Catch_Course.domain.member.service.MemberService;
@@ -45,6 +44,10 @@ public class BaseInitData {
         memberService.join("user2", "user21234", "유저2");
         memberService.join("user3", "user31234", "유저3");
 
+        for (int i = 4; i < 50; i++) {
+            memberService.join("user%d".formatted(i), "user%d1234".formatted(i), "유저%d".formatted(i));
+        }
+
     }
 
     @Transactional
@@ -55,17 +58,14 @@ public class BaseInitData {
         }
 
         Member user1 = memberService.findByUsername("user1").get();
-        Member user2 = memberService.findByUsername("user2").get();
-        Member user3 = memberService.findByUsername("user3").get();
 
-        Course course1 = courseService.write(user1, "수학 강의", "일반 수학 기초", 50);
-        Course course2 = courseService.write(user1, "국어 강의", "비문학 기초", 100);
+        courseService.write(user1, "수학 강의", "일반 수학 기초", 50);
+        courseService.write(user1, "국어 강의", "비문학 기초", 100);
 
-        courseService.write(user2, "title3", "content3", 10);
-        courseService.write(user2, "title4", "content4", 10);
-        courseService.write(user2, "title5", "content5", 10);
-        courseService.write(user3, "title6", "content6", 10);
-        courseService.write(user3, "title7", "content7", 10);
+        for (int i = 2; i < 50; i++) {
+            Member tempUser = memberService.findByUsername("user%d".formatted(i)).get();
+            courseService.write(tempUser, "강의 제목 %d".formatted(i), "강의 내용 %d".formatted(i), 50);
+        }
     }
 
 
