@@ -1,6 +1,7 @@
 package com.Catch_Course.domain.course.controller;
 
 import com.Catch_Course.domain.course.dto.CourseDto;
+import com.Catch_Course.domain.course.entity.Course;
 import com.Catch_Course.domain.course.service.CourseService;
 import com.Catch_Course.domain.member.entity.Member;
 import com.Catch_Course.domain.member.service.MemberService;
@@ -23,6 +24,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -211,7 +213,7 @@ class CourseControllerTest {
     }
 
     @Test
-    @DisplayName("강의 수정 - 작성자만 수정 가능")
+    @DisplayName("강의 수정")
     void modifyItem() throws Exception {
         long courseId = 1L;
         String title = "수정된 제목";
@@ -224,6 +226,43 @@ class CourseControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value("200-1"))
                 .andExpect(jsonPath("$.msg").value("%d번 글 수정이 완료되었습니다.".formatted(courseId)));
+
+        Course course = courseService.getItem(courseId).get();
+        assertThat(course.getTitle()).isEqualTo(title);
+        assertThat(course.getContent()).isEqualTo(content);
+        assertThat(course.getCapacity()).isEqualTo(capacity);
+    }
+
+    @Test
+    @DisplayName("강의 수정 실패 - 작성자만 수정 가능")
+    void modifyItem2() throws Exception {
+        long courseId = 3L;
+        String title = "수정된 제목";
+        String content = "수정된 내용";
+        long capacity = 50;
+
+        ResultActions resultActions = modifyRequest(courseId,title,content,capacity);
+
+        resultActions
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value("403-1"))
+                .andExpect(jsonPath("$.msg").value("자신이 작성한 글만 수정 가능합니다."));
+    }
+
+    @Test
+    @DisplayName("강의 수정 실패 - 존재하지 않는 강의")
+    void modifyItem3() throws Exception {
+        long courseId = 3333L;
+        String title = "수정된 제목";
+        String content = "수정된 내용";
+        long capacity = 50;
+
+        ResultActions resultActions = modifyRequest(courseId,title,content,capacity);
+
+        resultActions
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("404-1"))
+                .andExpect(jsonPath("$.msg").value("존재하지 않는 강의입니다."));
     }
 
     private ResultActions writeRequest(String title, String content, long capacity) throws Exception {
