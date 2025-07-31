@@ -83,10 +83,36 @@ class CourseControllerTest {
         resultActions
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value("200-1"))
-                .andExpect(jsonPath("$.msg").value("강의 목록 조회가 완료되었습니다."));
+                .andExpect(jsonPath("$.msg").value("강의 목록 조회가 완료되었습니다."))
+                .andExpect(jsonPath("$.data.items.length()").value(10))
+                .andExpect(jsonPath("$.data.currentPage").value(1));
 
         // DB 에서 실제 강의 목록 가져옴
         Page<Course> coursePage =  courseService.getItems(1,10);
+        List<Course> courses = coursePage.getContent();
+        checkCourses(courses, resultActions);
+    }
+
+    @Test
+    @DisplayName("강의 목록 조회 - 페이징 처리 확인")
+    void getItems2() throws Exception {
+        int page = 3;
+        int pageSize = 8;
+        ResultActions resultActions = mvc.perform(
+                        get("/api/courses?page="+page+"&pageSize="+pageSize)
+                                .header("Authorization", "Bearer " + token)
+                )
+                .andDo(print());
+
+        resultActions
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value("200-1"))
+                .andExpect(jsonPath("$.msg").value("강의 목록 조회가 완료되었습니다."))
+                .andExpect(jsonPath("$.data.items.length()").value(pageSize))
+                .andExpect(jsonPath("$.data.currentPage").value(page));
+
+        // DB 에서 실제 강의 목록 가져옴
+        Page<Course> coursePage =  courseService.getItems(page,pageSize);
         List<Course> courses = coursePage.getContent();
         checkCourses(courses, resultActions);
     }
