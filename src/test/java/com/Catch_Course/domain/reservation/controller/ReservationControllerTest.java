@@ -219,4 +219,19 @@ class ReservationControllerTest {
                 .andExpect(jsonPath("$.data[*].studentName").value(everyItem(equalTo(loginedMember.getNickname()))))
         ;
     }
+
+    @Test
+    @DisplayName("신청 목록 조회 실패 - 신청 내역이 없음")
+    void getReservation2() throws Exception {
+        ResultActions resultActions = mvc.perform(
+                get("/api/reserve/me")
+                        .header("Authorization", "Bearer " + token)
+        );
+
+        resultActions
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("404-3"))
+                .andExpect(jsonPath("$.msg").value("수강신청 이력이 없습니다."))
+        ;
+    }
 }
