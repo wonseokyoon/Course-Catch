@@ -61,7 +61,7 @@ public class ReservationController {
 
         return new RsData<>(
                 "200-1",
-                "조회가 완료되었습니다.",
+                "신청 목록 조회가 완료되었습니다.",
                 new PageDto(reservationPage)
         );
     }

@@ -16,8 +16,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.transaction.annotation.Transactional;
 
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.everyItem;
+import static org.hamcrest.Matchers.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -201,6 +200,9 @@ class ReservationControllerTest {
     @Test
     @DisplayName("신청 목록 조회")
     void getReservation() throws Exception {
+        int page = 1;
+        int pageSize = 5;
+
         Long courseId = 1L;
         mvc.perform(       // 수강 신청
                 post("/api/reserve?courseId=%d".formatted(courseId))
@@ -208,15 +210,18 @@ class ReservationControllerTest {
         );
 
         ResultActions resultActions = mvc.perform(
-                get("/api/reserve/me")
+                get("/api/reserve/me?page=%d&pageSize=%d".formatted(page, pageSize))
                         .header("Authorization", "Bearer " + token)
         );
 
         resultActions
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value("200-1"))
-                .andExpect(jsonPath("$.msg").value("조회가 완료되었습니다."))
+                .andExpect(jsonPath("$.msg").value("신청 목록 조회가 완료되었습니다."))
+                .andExpect(jsonPath("$.data.items.length()", lessThanOrEqualTo(pageSize)))
+                .andExpect(jsonPath("$.data.currentPage").value(page))
                 .andExpect(jsonPath("$.data[*].studentName").value(everyItem(equalTo(loginedMember.getNickname()))))
+
         ;
     }
 
