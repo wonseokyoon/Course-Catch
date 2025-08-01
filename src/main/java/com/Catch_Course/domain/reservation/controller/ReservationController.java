@@ -22,11 +22,6 @@ public class ReservationController {
     private final ReservationService reservationService;
     private final Rq rq;
 
-//    record ReserveReqBody(
-//            @NotBlank Long courseId
-//    ) {
-//    }
-
     @Operation(summary = "수강 신청")
     @PostMapping()
     public RsData<ReservationDto> reserve(@RequestParam Long courseId) {
@@ -67,8 +62,8 @@ public class ReservationController {
                 "200-1",
                 "조회가 완료되었습니다.",
                 reservations.stream()
-                    .map(ReservationDto::new)
-                    .toList()
+                        .map(ReservationDto::new)
+                        .toList()
         );
     }
 

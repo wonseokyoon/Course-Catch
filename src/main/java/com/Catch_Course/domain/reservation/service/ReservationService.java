@@ -31,7 +31,7 @@ public class ReservationService {
 
         if (optionalReservation.isPresent()) {
             // 신청 내역이 존재하는 경우 처리 메서드
-            return handleExistingReservation(optionalReservation.get(),course);
+            return handleExistingReservation(optionalReservation.get(), course);
         }
 
         course.increaseReservation();
@@ -46,10 +46,10 @@ public class ReservationService {
         return reservationRepository.save(reservation);
     }
 
-    private Reservation handleExistingReservation(Reservation reservation,Course course) {
+    private Reservation handleExistingReservation(Reservation reservation, Course course) {
 
-        if(reservation.getStatus().equals(ReservationStatus.COMPLETED)){
-            throw new ServiceException("409-1","이미 신청한 강의입니다.");
+        if (reservation.getStatus().equals(ReservationStatus.COMPLETED)) {
+            throw new ServiceException("409-1", "이미 신청한 강의입니다.");
         } else if (reservation.getStatus().equals(ReservationStatus.WAITING)) {
             // todo 대기열 참가
         }
@@ -67,7 +67,7 @@ public class ReservationService {
                 .orElseThrow(() -> new ServiceException("404-1", "존재하지 않는 강의입니다."));
 
         Reservation reservation = reservationRepository.findByStudentAndCourse(member, course)
-                .orElseThrow(() -> new ServiceException("404-3","수강 신청 이력이 없습니다."));
+                .orElseThrow(() -> new ServiceException("404-3", "수강 신청 이력이 없습니다."));
 
         if (reservation.getStatus() == ReservationStatus.CANCELED) {
             throw new ServiceException("409-2", "이미 취소된 수강 신청입니다.");
@@ -85,10 +85,10 @@ public class ReservationService {
     @Transactional(readOnly = true)
     public List<Reservation> getReservations(Member member) {
 
-        List<Reservation> reservations = reservationRepository.findAllByStudentAndStatus(member,ReservationStatus.COMPLETED);
+        List<Reservation> reservations = reservationRepository.findAllByStudentAndStatus(member, ReservationStatus.COMPLETED);
 
-        if(reservations.isEmpty()){
-            throw new ServiceException("404-3","수강신청 이력이 없습니다.");
+        if (reservations.isEmpty()) {
+            throw new ServiceException("404-3", "수강신청 이력이 없습니다.");
         }
 
         return reservations;
