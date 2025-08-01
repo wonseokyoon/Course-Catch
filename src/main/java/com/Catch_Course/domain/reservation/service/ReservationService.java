@@ -8,10 +8,12 @@ import com.Catch_Course.domain.reservation.entity.ReservationStatus;
 import com.Catch_Course.domain.reservation.repository.ReservationRepository;
 import com.Catch_Course.global.exception.ServiceException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -83,9 +85,10 @@ public class ReservationService {
     }
 
     @Transactional(readOnly = true)
-    public List<Reservation> getReservations(Member member) {
+    public Page<Reservation> getReservations(Member member, int page, int pageSize) {
+        Pageable pageable = PageRequest.of(page - 1, pageSize);
 
-        List<Reservation> reservations = reservationRepository.findAllByStudentAndStatus(member, ReservationStatus.COMPLETED);
+        Page<Reservation> reservations = reservationRepository.findAllByStudentAndStatus(member, ReservationStatus.COMPLETED,pageable);
 
         if (reservations.isEmpty()) {
             throw new ServiceException("404-3", "수강신청 이력이 없습니다.");

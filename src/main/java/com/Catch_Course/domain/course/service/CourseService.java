@@ -37,7 +37,7 @@ public class CourseService {
 
     public Page<Course> getItems(int page, int pageSize, KeywordType keywordType, String keyword) {
 
-        Pageable pageable = PageRequest.of(page-1, pageSize);
+        Pageable pageable = PageRequest.of(page - 1, pageSize);
 
         switch (keywordType) {
             case instructor -> {

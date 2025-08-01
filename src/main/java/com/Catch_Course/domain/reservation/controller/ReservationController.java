@@ -1,6 +1,7 @@
 package com.Catch_Course.domain.reservation.controller;
 
 import com.Catch_Course.domain.member.entity.Member;
+import com.Catch_Course.domain.reservation.dto.PageDto;
 import com.Catch_Course.domain.reservation.dto.ReservationDto;
 import com.Catch_Course.domain.reservation.entity.Reservation;
 import com.Catch_Course.domain.reservation.service.ReservationService;
@@ -9,9 +10,8 @@ import com.Catch_Course.global.dto.RsData;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
 
 @Tag(name = "reservationController", description = "수강신청 관련 API")
 @RestController
@@ -53,17 +53,16 @@ public class ReservationController {
 
     @Operation(summary = "수강 목록 조회")
     @GetMapping("/me")
-    public RsData<List<ReservationDto>> getReservations() {
+    public RsData<PageDto> getReservations(@RequestParam(defaultValue = "1") int page,
+                                                        @RequestParam(defaultValue = "5") int pageSize) {
         Member member = rq.getMember(rq.getDummyMember());  // 실제 멤버 객체
 
-        List<Reservation> reservations = reservationService.getReservations(member);
+        Page<Reservation> reservationPage = reservationService.getReservations(member, page, pageSize);
 
         return new RsData<>(
                 "200-1",
                 "조회가 완료되었습니다.",
-                reservations.stream()
-                        .map(ReservationDto::new)
-                        .toList()
+                new PageDto(reservationPage)
         );
     }
 

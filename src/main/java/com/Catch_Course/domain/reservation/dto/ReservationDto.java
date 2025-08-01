@@ -8,7 +8,6 @@ import java.time.LocalDateTime;
 
 @Getter
 public class ReservationDto {
-    private long id;
     private long courseId;              // 강의 id
     private String courseTitle;         // 강의 제목
     private long studentId;             // 학생 id
@@ -18,7 +17,6 @@ public class ReservationDto {
     private LocalDateTime createdDate;
 
     public ReservationDto(Reservation reservation) {
-        this.id = reservation.getId();
         this.courseId = reservation.getCourse().getId();
         this.courseTitle = reservation.getCourse().getTitle();
         this.studentId = reservation.getStudent().getId();
