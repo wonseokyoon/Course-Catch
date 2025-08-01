@@ -3,7 +3,6 @@ package com.Catch_Course.domain.reservation.service;
 import com.Catch_Course.domain.course.entity.Course;
 import com.Catch_Course.domain.course.repository.CourseRepository;
 import com.Catch_Course.domain.member.entity.Member;
-import com.Catch_Course.domain.reservation.dto.ReservationDto;
 import com.Catch_Course.domain.reservation.entity.Reservation;
 import com.Catch_Course.domain.reservation.entity.ReservationStatus;
 import com.Catch_Course.domain.reservation.repository.ReservationRepository;
@@ -84,7 +83,7 @@ public class ReservationService {
     }
 
     @Transactional(readOnly = true)
-    public List<ReservationDto> getReservations(Member member) {
+    public List<Reservation> getReservations(Member member) {
 
         List<Reservation> reservations = reservationRepository.findAllByStudentAndStatus(member,ReservationStatus.COMPLETED);
 
@@ -92,8 +91,7 @@ public class ReservationService {
             throw new ServiceException("404-3","수강신청 이력이 없습니다.");
         }
 
-        return reservations.stream()
-                .map(ReservationDto::new)
-                .toList();
+        return reservations;
     }
+
 }

@@ -61,12 +61,14 @@ public class ReservationController {
     public RsData<List<ReservationDto>> getReservations() {
         Member member = rq.getMember(rq.getDummyMember());  // 실제 멤버 객체
 
-        List<ReservationDto> reservations = reservationService.getReservations(member);
+        List<Reservation> reservations = reservationService.getReservations(member);
 
         return new RsData<>(
                 "200-1",
                 "조회가 완료되었습니다.",
-                reservations
+                reservations.stream()
+                    .map(ReservationDto::new)
+                    .toList()
         );
     }
 
