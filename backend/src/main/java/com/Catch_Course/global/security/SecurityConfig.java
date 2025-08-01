@@ -42,6 +42,7 @@ public class SecurityConfig {
 
                 // csrf 비활성화
                 .csrf(csrf -> csrf.disable())
+                .oauth2Login(oauth2->{})
                 .addFilterBefore(customAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
 
                 // 예외 처리
