@@ -44,6 +44,7 @@ jobs:
       tag_name: ${{ steps.create_tag.outputs.new_tag }}
     steps:
       - uses: actions/checkout@v4
+      
       - name: Create Tag
         id: create_tag
         uses: mathieudutour/github-tag-action@v6.2
@@ -67,8 +68,12 @@ jobs:
     if: github.event_name == 'push'
     needs: makeTagAndRelease
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./backend 
     steps:
       - uses: actions/checkout@v4
+      
       - name: application-secret.yml 생성
         env:
           ACTIONS_STEP_DEBUG: true
