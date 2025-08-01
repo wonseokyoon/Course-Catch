@@ -13,6 +13,7 @@ import java.util.Optional;
 
 @Repository
 public interface ReservationRepository extends JpaRepository<Reservation, Long> {
+    @EntityGraph(attributePaths = {"course","student"})  // course 와 student 필드를 즉시 로딩
     Optional<Reservation> findByStudentAndCourse(Member member, Course course);
 
     @EntityGraph(attributePaths = {"course","student"})  // course 와 student 필드를 즉시 로딩
