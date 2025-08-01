@@ -1,6 +1,7 @@
 package com.Catch_Course.domain.course.controller;
 
 import com.Catch_Course.domain.course.dto.CourseDto;
+import com.Catch_Course.domain.course.dto.PageDto;
 import com.Catch_Course.domain.course.entity.Course;
 import com.Catch_Course.domain.course.service.CourseService;
 import com.Catch_Course.domain.member.entity.Member;
@@ -12,11 +13,11 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 import org.hibernate.validator.constraints.Length;
+import org.springframework.data.domain.Page;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
 
 @Tag(name = "CourseController", description = "강의 관련 API")
 @RestController
@@ -31,17 +32,20 @@ public class CourseController {
             summary = "강의 목록 조회"
     )
     @GetMapping
-    public RsData<List<CourseDto>> getItems() {
+    public RsData<PageDto> getItems(@RequestParam(defaultValue = "1") int page,
+                                    @RequestParam(defaultValue = "10") int pageSize,
+                                    @RequestParam(defaultValue = "title") KeywordType keywordType,
+                                    @RequestParam(defaultValue = "") String keyword
+    ) {
 
-        List<Course> courses = courseService.getItems();
-        List<CourseDto> courseDtos = courses.stream()
-                .map(CourseDto::new)
-                .toList();
+        Page<Course> coursePage = courseService.getItems(page,pageSize,keywordType,keyword);
+
+        if(coursePage.isEmpty()) throw new ServiceException("404-2","일치하는 강의가 없습니다.");
 
         return new RsData<>(
                 "200-1",
                 "강의 목록 조회가 완료되었습니다.",
-                courseDtos
+                new PageDto(coursePage)
         );
     }
 
@@ -53,7 +57,7 @@ public class CourseController {
     public RsData<CourseDto> getItem(@PathVariable long id) {
 
         Course course = courseService.getItem(id)
-                .orElseThrow(() -> new ServiceException("404", "존재하지 않는 강의입니다."));
+                .orElseThrow(() -> new ServiceException("404-1", "존재하지 않는 강의입니다."));
 
         return new RsData<>(
                 "200-1",
@@ -70,7 +74,7 @@ public class CourseController {
 
         Member dummyMember = rq.getDummyMember();        // 더미 유저 객체(id,username,authorities 만 있음, 필요하면 DB에서 꺼내씀)
         Course course = courseService.getItem(id)
-                .orElseThrow(() -> new ServiceException("404", "존재하지 않는 강의입니다."));
+                .orElseThrow(() -> new ServiceException("404-1", "존재하지 않는 강의입니다."));
 
         course.canDelete(dummyMember);
         courseService.delete(course);
@@ -84,7 +88,7 @@ public class CourseController {
 
     record ModifyReqBody(@NotBlank @Length(min = 3) String title,
                          @NotBlank @Length(min = 3) String content,
-                         @NotBlank @Min(1) long capacity
+                         @NotNull @Min(1) long capacity
     ) {
     }
 
@@ -97,7 +101,7 @@ public class CourseController {
 
         Member dummyMember = rq.getDummyMember();
         Course course = courseService.getItem(id)
-                .orElseThrow(() -> new ServiceException("404", "존재하지 않는 강의입니다."));
+                .orElseThrow(() -> new ServiceException("404-1", "존재하지 않는 강의입니다."));
 
         if (!course.getInstructor().getId().equals(dummyMember.getId())) {
             throw new ServiceException("403-1", "자신이 작성한 글만 수정 가능합니다.");
@@ -115,7 +119,7 @@ public class CourseController {
     record WriteReqBody(
             @NotBlank @Length(min = 3) String title,
             @NotBlank @Length(min = 3) String content,
-            @NotBlank @Min(1) long capacity
+            @NotNull @Min(1) long capacity
     ) {
     }
 
