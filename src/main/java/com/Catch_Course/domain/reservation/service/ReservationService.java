@@ -3,6 +3,7 @@ package com.Catch_Course.domain.reservation.service;
 import com.Catch_Course.domain.course.entity.Course;
 import com.Catch_Course.domain.course.repository.CourseRepository;
 import com.Catch_Course.domain.member.entity.Member;
+import com.Catch_Course.domain.reservation.dto.ReservationDto;
 import com.Catch_Course.domain.reservation.entity.Reservation;
 import com.Catch_Course.domain.reservation.entity.ReservationStatus;
 import com.Catch_Course.domain.reservation.repository.ReservationRepository;
@@ -11,6 +12,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -20,7 +22,6 @@ public class ReservationService {
 
     private final CourseRepository courseRepository;
     private final ReservationRepository reservationRepository;
-
 
     public Reservation reserve(Member member, Long courseId) {
 
@@ -80,5 +81,19 @@ public class ReservationService {
 //        reservationRepository.delete(reservation);        // 나중에 필요하면 삭제 처리
 
         return reservationRepository.save(reservation);
+    }
+
+    @Transactional(readOnly = true)
+    public List<ReservationDto> getReservations(Member member) {
+
+        List<Reservation> reservations = reservationRepository.findAllByStudentAndStatus(member,ReservationStatus.COMPLETED);
+
+        if(reservations.isEmpty()){
+            throw new ServiceException("404-3","수강신청 이력이 없습니다.");
+        }
+
+        return reservations.stream()
+                .map(ReservationDto::new)
+                .toList();
     }
 }

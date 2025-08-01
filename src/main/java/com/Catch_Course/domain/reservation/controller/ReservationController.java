@@ -11,6 +11,8 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @Tag(name = "reservationController", description = "수강신청 관련 API")
 @RestController
 @RequestMapping("/api/reserve")
@@ -51,6 +53,20 @@ public class ReservationController {
                 "200-1",
                 "수강 취소되었습니다.",
                 new ReservationDto(reservation)
+        );
+    }
+
+    @Operation(summary = "수강 목록 조회")
+    @GetMapping("/me")
+    public RsData<List<ReservationDto>> getReservations() {
+        Member member = rq.getMember(rq.getDummyMember());  // 실제 멤버 객체
+
+        List<ReservationDto> reservations = reservationService.getReservations(member);
+
+        return new RsData<>(
+                "200-1",
+                "조회가 완료되었습니다.",
+                reservations
         );
     }
 
