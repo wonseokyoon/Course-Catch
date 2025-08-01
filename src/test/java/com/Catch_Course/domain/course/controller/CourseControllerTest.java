@@ -51,9 +51,9 @@ class CourseControllerTest {
     private Member loginedMember;
 
     @BeforeEach
-    @DisplayName("user1로 로그인 셋업")
+    @DisplayName("user2로 로그인 셋업")
     void setUp() {
-        loginedMember = memberService.findByUsername("user1").get();
+        loginedMember = memberService.findByUsername("user2").get();
         token = memberService.getAuthToken(loginedMember);
     }
 
@@ -161,7 +161,7 @@ class CourseControllerTest {
     @DisplayName("강의 목록 조회 - 검색 by 작성자")
     void getItems5() throws Exception {
         KeywordType keywordType = instructor;
-        String keyword = "유저1";
+        String keyword = "유저2";
         ResultActions resultActions = mvc.perform(
                         get("/api/courses?keywordType=" + keywordType + "&keyword=" + keyword)
                                 .header("Authorization", "Bearer " + token)
@@ -336,7 +336,7 @@ class CourseControllerTest {
     @Test
     @DisplayName("강의 수정 실패 - 작성자만 수정 가능")
     void modifyItem2() throws Exception {
-        long courseId = 3L;
+        long courseId = 4L;
         String title = "수정된 제목";
         String content = "수정된 내용";
         long capacity = 50;

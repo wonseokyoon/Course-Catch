@@ -17,7 +17,6 @@ import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 import org.hibernate.validator.constraints.Length;
 import org.springframework.data.domain.Page;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 @Tag(name = "CourseController", description = "강의 관련 API")
@@ -33,7 +32,6 @@ public class CourseController {
             summary = "강의 목록 조회"
     )
     @GetMapping
-    @Transactional(readOnly = true)
     public RsData<PageDto> getItems(@RequestParam(defaultValue = "1") int page,
                                     @RequestParam(defaultValue = "10") int pageSize,
                                     @RequestParam(defaultValue = "title") KeywordType keywordType,
@@ -56,7 +54,6 @@ public class CourseController {
             summary = "강의 상세 조회"
     )
     @GetMapping("{id}")
-    @Transactional(readOnly = true)
     public RsData<CourseDto> getItem(@PathVariable long id) {
 
         Course course = courseService.getItem(id)
@@ -73,7 +70,6 @@ public class CourseController {
             summary = "강의 삭제"
     )
     @DeleteMapping("/{id}")
-    @Transactional
     public RsData<Void> delete(@PathVariable long id) {
 
         Member dummyMember = rq.getDummyMember();        // 더미 유저 객체(id,username,authorities 만 있음, 필요하면 DB에서 꺼내씀)
@@ -100,7 +96,6 @@ public class CourseController {
             summary = "강의 수정"
     )
     @PutMapping("{id}")
-    @Transactional
     public RsData<Void> modify(@PathVariable long id, @RequestBody @Valid ModifyReqBody body
     ) {
 
@@ -132,7 +127,6 @@ public class CourseController {
             summary = "강의 생성"
     )
     @PostMapping
-    @Transactional
     public RsData<CourseDto> write(@RequestBody @Valid WriteReqBody body) {
 
         Member dummyMember = rq.getDummyMember();

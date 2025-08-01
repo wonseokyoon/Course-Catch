@@ -37,17 +37,13 @@ public class BaseInitData {
             return;
         }
 
-        // 회원 샘플데이터 생성
-        memberService.join("system", "system1234", "시스템");
-        memberService.join("admin", "admin1234", "관리자");
-        memberService.join("user1", "user11234", "유저1");
-        memberService.join("user2", "user21234", "유저2");
-        memberService.join("user3", "user31234", "유저3");
-
-        for (int i = 4; i < 50; i++) {
+        for (int i = 1; i <= 50; i++) {
             memberService.join("user%d".formatted(i), "user%d1234".formatted(i), "유저%d".formatted(i));
         }
 
+        // 회원 샘플데이터 생성
+        memberService.join("system", "system1234", "시스템");
+        memberService.join("admin", "admin1234", "관리자");
     }
 
     @Transactional
@@ -57,13 +53,15 @@ public class BaseInitData {
             return;
         }
 
-        Member user1 = memberService.findByUsername("user1").get();
+        Member user2 = memberService.findByUsername("user2").get();
 
-        courseService.write(user1, "수학 강의", "일반 수학 기초", 50);
-        courseService.write(user1, "국어 강의", "비문학 기초", 100);
+        courseService.write(user2, "수학 강의", "일반 수학 기초", 50);
+        courseService.write(user2, "국어 강의", "비문학 기초", 100);
+        courseService.write(user2, "인기 폭발 강의", "늦으면 없다", 1);
 
         for (int i = 2; i < 50; i++) {
-            Member tempUser = memberService.findByUsername("user%d".formatted(i)).get();
+            int userId = (i % 5) + 2;
+            Member tempUser = memberService.findByUsername("user%d".formatted(userId)).get();
             courseService.write(tempUser, "강의 제목 %d".formatted(i), "강의 내용 %d".formatted(i), 50);
         }
     }

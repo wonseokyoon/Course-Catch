@@ -15,10 +15,12 @@ import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class CourseService {
 
     private final CourseRepository courseRepository;
 
+    @Transactional
     public Course write(Member member, String title, String content, long capacity) {
 
         return courseRepository.save(
@@ -28,13 +30,14 @@ public class CourseService {
                         .title(title)
                         .content(content)
                         .capacity(capacity)
+                        .currentRegistration(0)
                         .build()
         );
     }
 
     public Page<Course> getItems(int page, int pageSize, KeywordType keywordType, String keyword) {
 
-        Pageable pageable = PageRequest.of(page-1, pageSize);
+        Pageable pageable = PageRequest.of(page - 1, pageSize);
 
         switch (keywordType) {
             case instructor -> {
@@ -58,6 +61,7 @@ public class CourseService {
         return courseRepository.count();
     }
 
+    @Transactional
     public void delete(Course course) {
         courseRepository.delete(course);
     }
@@ -67,9 +71,5 @@ public class CourseService {
         course.setTitle(title);
         course.setContent(content);
         course.setCapacity(capacity);
-    }
-
-    public void flush() {
-        courseRepository.flush();
     }
 }
