@@ -73,7 +73,7 @@ jobs:
         working-directory: ./backend 
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: application-secret.yml 생성
         env:
           ACTIONS_STEP_DEBUG: true
@@ -99,7 +99,7 @@ jobs:
       - name: 빌드 앤 푸시
         uses: docker/build-push-action@v3
         with:
-          context: .
+          context: ./backend
           push: true
           tags: |
             ghcr.io/${{ env.OWNER_LC }}/catch-course:${{ needs.makeTagAndRelease.outputs.tag_name }},
