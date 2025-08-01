@@ -9,11 +9,14 @@ import java.util.Collection;
 public class SecurityUser extends User {
     @Getter
     private Long id;
+    @Getter
+    private String nickname;
 
     // 기존 SpringSecurity 가 요구하는 인증 정보: username, password, authorities
     // id 꼽사리 끼우는 커스터마이징
-    public SecurityUser(Long id, String username, String password, Collection<? extends GrantedAuthority> authorities) {
+    public SecurityUser(Long id, String username, String password, String nickname, Collection<? extends GrantedAuthority> authorities) {
         super(username, password, authorities);
         this.id = id;
+        this.nickname = nickname;
     }
 }
