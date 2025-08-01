@@ -3,7 +3,7 @@ on:
   push:
     paths:
       - '.github/workflows/**'
-      - 'baeckend/**'
+      - 'backend/**'
     branches: [ "main", "develop" ]
   pull_request:
     branches: [ "main", "develop" ]
