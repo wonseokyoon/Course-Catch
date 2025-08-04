@@ -4,10 +4,7 @@ import com.Catch_Course.global.entity.BaseTime;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EntityListeners;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 import lombok.experimental.SuperBuilder;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 import org.springframework.security.core.GrantedAuthority;
@@ -35,6 +32,8 @@ public class Member extends BaseTime {
     private String apiKey;
     @Column(length = 100, unique = true)
     private String nickname;
+    @NonNull
+    private String profileImageUrl;
 
     public boolean isAdmin() {
         return username.equals("admin");
@@ -66,5 +65,10 @@ public class Member extends BaseTime {
 
     public void update(String nickname) {
         this.nickname = nickname;
+    }
+
+    // 기본 프사 설정
+    public String getProfileImageUrl() {
+        return profileImageUrl == null || profileImageUrl.isBlank() ? "https://i.imgur.com/wcxGofh.png" : profileImageUrl;
     }
 }

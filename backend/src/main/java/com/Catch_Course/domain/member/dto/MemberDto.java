@@ -15,11 +15,13 @@ public class MemberDto {
     @JsonProperty("modifiedDatetime")
     private LocalDateTime modifiedDate;
     private String nickname;
+    private String profileImageUrl;
 
     public MemberDto(Member member) {
         this.id = member.getId();
         this.createdDate = member.getCreatedDate();
         this.modifiedDate = member.getModifiedDate();
         this.nickname = member.getNickname();
+        this.profileImageUrl = member.getProfileImageUrl();
     }
 }

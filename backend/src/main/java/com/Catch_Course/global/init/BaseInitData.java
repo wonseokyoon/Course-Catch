@@ -38,12 +38,12 @@ public class BaseInitData {
         }
 
         for (int i = 1; i <= 50; i++) {
-            memberService.join("user%d".formatted(i), "user%d1234".formatted(i), "유저%d".formatted(i));
+            memberService.join("user%d".formatted(i), "user%d1234".formatted(i), "유저%d".formatted(i),"");
         }
 
         // 회원 샘플데이터 생성
-        memberService.join("system", "system1234", "시스템");
-        memberService.join("admin", "admin1234", "관리자");
+        memberService.join("system", "system1234", "시스템","https://placehold.co/640x640?text=system");
+        memberService.join("admin", "admin1234", "관리자","https://placehold.co/640x640?text=admin");
     }
 
     @Transactional
