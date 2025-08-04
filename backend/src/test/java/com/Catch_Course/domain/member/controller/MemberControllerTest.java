@@ -113,8 +113,11 @@ class MemberControllerTest {
                 .andExpect(jsonPath("$.msg").value("%s님 환영합니다.".formatted(member.getNickname())))
                 .andExpect(jsonPath("$.data.memberDto.id").value(member.getId()))    // id 검증
                 .andExpect(jsonPath("$.data.memberDto.nickname").value(member.getNickname()))    // 닉네임 검증
+                .andExpect(jsonPath("$.data.memberDto.profileImageUrl").isNotEmpty())    // profileImageUrl notnull 체크
+                .andExpect(jsonPath("$.data.memberDto.profileImageUrl").value(member.getProfileImageUrl()))    // 검증
                 .andExpect(jsonPath("$.data.apiKey").value(member.getApiKey()))    // apiKey 검증
                 .andExpect(jsonPath("$.data.accessToken").exists());    // accessToken 나오는지
+
     }
 
     private ResultActions meRequest(String accessToken) throws Exception {
