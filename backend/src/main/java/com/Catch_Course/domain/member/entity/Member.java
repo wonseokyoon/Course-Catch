@@ -32,7 +32,6 @@ public class Member extends BaseTime {
     private String apiKey;
     @Column(length = 100, unique = true)
     private String nickname;
-    @NonNull
     private String profileImageUrl;
 
     public boolean isAdmin() {
