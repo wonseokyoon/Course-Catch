@@ -39,7 +39,7 @@ public class MemberController {
                 });
 
 
-        Member member = memberService.join(body.username(), body.password(), body.nickname());
+        Member member = memberService.join(body.username(), body.password(), body.nickname(), "");
 
         return new RsData<>(
                 "201-1",
