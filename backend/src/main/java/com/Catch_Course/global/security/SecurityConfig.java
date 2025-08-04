@@ -4,7 +4,6 @@ import com.Catch_Course.global.dto.RsData;
 import com.Catch_Course.global.util.Ut;
 import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
-import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -19,8 +18,8 @@ import org.springframework.security.web.header.writers.frameoptions.XFrameOption
 public class SecurityConfig {
 
     private final CustomAuthenticationFilter customAuthenticationFilter;
+    private final CustomAuthorizationRequestResolver customAuthorizationRequestResolver;
 
-    @Bean
     SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
                 .authorizeHttpRequests((authorizeHttpRequests) ->
@@ -46,6 +45,10 @@ public class SecurityConfig {
                 // CORS
                 .cors(cors -> {})
                 .oauth2Login(oauth2->{
+                    oauth2.authorizationEndpoint(
+                            authorizationEndpoint -> authorizationEndpoint
+                                    .authorizationRequestResolver(customAuthorizationRequestResolver)
+                    );
                     oauth2.successHandler((request, response, authentication) -> {
                         HttpSession session = request.getSession();
                         String redirectUrl = (String) session.getAttribute("redirectUrl");  // 세션 객체를 가져옴(로그인 전 방문 한 주소)
