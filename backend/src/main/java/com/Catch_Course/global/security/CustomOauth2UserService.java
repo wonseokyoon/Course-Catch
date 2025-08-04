@@ -22,29 +22,47 @@ public class CustomOauth2UserService extends DefaultOAuth2UserService {
     @Transactional
     public OAuth2User loadUser(OAuth2UserRequest userRequest) throws OAuth2AuthenticationException {
         OAuth2User oauth2User = super.loadUser(userRequest);
-        String providerType = userRequest.getClientRegistration().getRegistrationId();      // SSO 타입
+
         String oauthId = oauth2User.getName();     // 식별자
+        String providerType = userRequest.getClientRegistration().getRegistrationId();      // SSO 타입
         String username = providerType + "-" + oauthId;
 
         Map<String,Object> attributes = oauth2User.getAttributes();
-        Map<String,Object> properties = (Map<String, Object>) attributes.get("properties");
+        if(providerType.equals("kakao")) {
 
-        String nickname = properties.get("nickname").toString();
-        String profile_image = properties.get("profile_image").toString();
+            Map<String,Object> properties = (Map<String, Object>) attributes.get("properties");
 
-        Optional<Member> optionalMember = memberService.findByUsername(username);
+            String nickname = oauthId + properties.get("nickname").toString();
+            String profile_image = properties.get("profile_image").toString();
 
-        // 이미 존재하는 유저라면 닉네임만 확인해서 업데이트
-        if(optionalMember.isPresent()) {
-            Member member = optionalMember.get();
-            member.update(nickname);
+            Optional<Member> optionalMember = memberService.findByUsername(username);
+            // 이미 존재하는 유저라면 닉네임만 확인해서 업데이트
+            if(optionalMember.isPresent()) {
+                Member member = optionalMember.get();
+                member.update(nickname);
+                return new SecurityUser(member);
+            }
+
+            // 새로 가입하는 유저
+            Member member = memberService.join(username, "",nickname,profile_image);
+            return new SecurityUser(member);
+        } else {
+            String nickname = oauthId + attributes.get("name").toString();
+            String profile_image = attributes.get("picture").toString();
+
+            Optional<Member> optionalMember = memberService.findByUsername(username);
+            // 이미 존재하는 유저라면 닉네임만 확인해서 업데이트
+            if(optionalMember.isPresent()) {
+                Member member = optionalMember.get();
+                member.update(nickname);
+                return new SecurityUser(member);
+            }
+
+            // 새로 가입하는 유저
+            Member member = memberService.join(username, "",nickname,profile_image);
             return new SecurityUser(member);
         }
 
-
-        // 새로 가입하는 유저
-        Member member = memberService.join(username, "",nickname,profile_image);
-        return new SecurityUser(member);
     }
 
 
