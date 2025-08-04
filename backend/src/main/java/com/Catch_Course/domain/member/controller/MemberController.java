@@ -9,6 +9,7 @@ import com.Catch_Course.global.exception.ServiceException;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import lombok.RequiredArgsConstructor;
@@ -99,12 +100,12 @@ public class MemberController {
 
     @Operation(summary = "로그아웃")
     @DeleteMapping("/logout")
-    public RsData<Void> logout() {
-
+    public RsData<Void> logout(HttpSession session) {
         // 쿠키에서 제거
         rq.removeCookie("accessToken");
         rq.removeCookie("apiKey");
 
+        session.invalidate();
         return new RsData<>(
                 "200-1",
                 "로그아웃이 완료되었습니다."
