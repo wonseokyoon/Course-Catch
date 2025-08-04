@@ -15,12 +15,13 @@ public class MemberService {
     private final MemberRepository memberRepository;
     private final AuthTokenService authTokenService;
 
-    public Member join(String username, String password, String nickname, String profileImageUrl) {
+    public Member join(String username, String password, String nickname, String email, String profileImageUrl) {
         Member member = Member.builder()
                 .username(username)
                 .password(password)
                 .apiKey(username)
                 .nickname(nickname)
+                .email(email)
                 .profileImageUrl(profileImageUrl)
                 .build();
 
@@ -74,4 +75,7 @@ public class MemberService {
         return authTokenService.createAccessToken(member);
     }
 
+    public boolean existByEmail(String email) {
+        return memberRepository.existsByEmail(email);
+    }
 }
