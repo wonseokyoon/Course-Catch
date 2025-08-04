@@ -42,7 +42,13 @@ public class SecurityConfig {
 
                 // csrf 비활성화
                 .csrf(csrf -> csrf.disable())
-                .oauth2Login(oauth2->{})
+                // CORS
+                .cors(cors -> {})
+                .oauth2Login(oauth2->{
+                    oauth2.successHandler((request, response, authentication) -> {
+                        response.sendRedirect("http://localhost:3000");
+                    });
+                })
                 .addFilterBefore(customAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
 
                 // 예외 처리
