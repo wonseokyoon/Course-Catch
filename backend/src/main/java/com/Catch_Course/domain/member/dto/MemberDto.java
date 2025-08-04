@@ -3,6 +3,7 @@ package com.Catch_Course.domain.member.dto;
 import com.Catch_Course.domain.member.entity.Member;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Getter;
+import lombok.NonNull;
 
 import java.time.LocalDateTime;
 
@@ -15,6 +16,7 @@ public class MemberDto {
     @JsonProperty("modifiedDatetime")
     private LocalDateTime modifiedDate;
     private String nickname;
+    @NonNull
     private String profileImageUrl;
 
     public MemberDto(Member member) {
