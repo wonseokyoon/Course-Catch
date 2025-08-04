@@ -29,7 +29,7 @@ export default function LoginForm() {
       return;
     }
 
-    const response = await client.POST("/api/v1/members/login", {
+    const response = await client.POST("/api/members/login", {
       body: {
         username,
         password,

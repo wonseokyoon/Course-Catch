@@ -20,7 +20,7 @@ export default function HomeMenu() {
 
   async function handleLogout(e: React.MouseEvent<HTMLAnchorElement>) {
     e.preventDefault();
-    const response = await client.DELETE("/api/v1/members/logout", {
+    const response = await client.DELETE("/api/members/logout", {
       credentials: "include",
     });
 

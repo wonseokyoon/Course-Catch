@@ -8,6 +8,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.web.header.writers.frameoptions.XFrameOptionsHeaderWriter;
@@ -33,7 +34,7 @@ public class SecurityConfig {
                                 .hasRole("ADMIN")
                                 .requestMatchers(HttpMethod.GET, "/api/**")
                                 .permitAll()
-                                .requestMatchers("/api/members/login", "/api/members/join","/api/members/logout")
+                                .requestMatchers("/api/members/login", "/api/members/join","/api/members/logout","/session")
                                 .permitAll()
                                 .anyRequest()
                                 .authenticated()
@@ -44,6 +45,9 @@ public class SecurityConfig {
 
                 // csrf 비활성화
                 .csrf(csrf -> csrf.disable())
+                .sessionManagement(sessionManagement -> {
+                    sessionManagement.sessionCreationPolicy(SessionCreationPolicy.STATELESS);
+                })
                 // CORS
                 .cors(cors -> {})
                 .oauth2Login(oauth2->{
