@@ -1,5 +1,7 @@
 package com.Catch_Course.domain.member.controller;
 
+import com.Catch_Course.domain.email.dto.TempMemberInfo;
+import com.Catch_Course.domain.email.service.EmailService;
 import com.Catch_Course.domain.member.dto.MemberDto;
 import com.Catch_Course.domain.member.entity.Member;
 import com.Catch_Course.domain.member.service.MemberService;
@@ -11,6 +13,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import lombok.RequiredArgsConstructor;
 import org.hibernate.validator.constraints.Length;
@@ -24,30 +27,89 @@ public class MemberController {
 
     private final MemberService memberService;
     private final Rq rq;
+    private final EmailService emailService;
 
     record JoinReqBody(@NotBlank @Length(min = 3) String username,
                        @NotBlank @Length(min = 3) String password,
-                       @NotBlank @Length(min = 3) String nickname) {
+                       @NotBlank @Length(min = 3) String nickname,
+                       @NotBlank @Email String email,
+                       String profileImageUrl) {
     }
 
-    @Operation(summary = "회원 가입")
-    @PostMapping("/join")
-    public RsData<MemberDto> join(@RequestBody @Valid JoinReqBody body) {
+    @Operation(summary = "회원 가입 1단계", description = "이메일 인증 코드 발송")
+    @PostMapping("/send-code")
+    public RsData<MemberDto> sendCode(@RequestBody @Valid JoinReqBody body) {
 
         memberService.findByUsername(body.username())
                 .ifPresent(member -> {
                     throw new ServiceException("400-1", "중복된 아이디입니다.");
                 });
 
+        if (memberService.existByEmail(body.email())) {
+            throw new ServiceException("400-2", "중복된 이메일입니다.");
+        }
 
-        Member member = memberService.join(body.username(), body.password(), body.nickname(), "");
+        String verificationCode = emailService.createVerificationCode();
+
+        // 임시 정보 생성
+        emailService.saveTempMemberInfo(body.email, body.username, body.nickname, body.password, body.profileImageUrl, verificationCode);
+
+        // 메일 전송
+        emailService.sendVerificationCode(body.email, verificationCode);
 
         return new RsData<>(
                 "201-1",
-                "회원 가입이 완료되었습니다.",
-                new MemberDto(member)
+                "인증 코드가 메일로 전송되었습니다."
         );
     }
+
+    record JoinReqBody2(@NotBlank @Email String email,
+                        @NotBlank String verificationCode) {
+    }
+
+    @Operation(summary = "회원 가입 2단계", description = "인증 코드 확인 및 최종 가입")
+    @PostMapping("/verify-code")
+    public RsData<MemberDto> verifyAndJoin(@RequestBody @Valid JoinReqBody2 body) {
+        // 임시 인증 정보
+        TempMemberInfo tempMemberInfo = emailService.getMemberInfo(body.email);
+
+        if (tempMemberInfo == null) {
+            throw new ServiceException("401-4", "유효하지 않은 인증 요청입니다.");
+        }
+
+        if (!tempMemberInfo.getVerificationCode().equals(body.verificationCode)) {
+            throw new ServiceException("401-5", "잘못된 인증 코드입니다.");
+        }
+
+        // 회원 생성
+        memberService.join(tempMemberInfo.getUsername(), tempMemberInfo.getPassword(),
+                tempMemberInfo.getNickname(), tempMemberInfo.getEmail(), tempMemberInfo.getProfileImageUrl());
+
+        return new RsData<>(
+                "201-1",
+                "인증 코드가 메일로 전송되었습니다."
+        );
+    }
+
+
+//    @Operation(summary = "회원 가입")
+//    @PostMapping("/join")
+//    public RsData<MemberDto> join(@RequestBody @Valid JoinReqBody body) {
+//
+//        memberService.findByUsername(body.username())
+//                .ifPresent(member -> {
+//                    throw new ServiceException("400-1", "중복된 아이디입니다.");
+//                });
+//
+//
+//        Member member = memberService.join(body.username(), body.password(), body.nickname(), "");
+//
+//        return new RsData<>(
+//                "201-1",
+//                "회원 가입이 완료되었습니다.",
+//                new MemberDto(member)
+//        );
+//    }
 
 
     record LoginReqBody(@NotBlank @Length(min = 3) String username,
