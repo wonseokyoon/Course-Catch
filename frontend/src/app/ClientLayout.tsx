@@ -46,7 +46,12 @@ export default function ClinetLayout({
       return;
     }
 
-    setLoginMember(response.data.data);
+    if (response.data && response.data.data) {
+      setLoginMember(response.data.data);
+    } else {
+      // 데이터가 없는 경우를 처리
+      setNoLoginMember();
+    }
   }
 
   useEffect(() => {
