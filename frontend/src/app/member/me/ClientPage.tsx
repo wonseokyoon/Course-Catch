@@ -14,7 +14,7 @@ export default function ClinetPage() {
       <div>
         <Image
           className="w-20 h-20 rounded-full"
-          src={loginMember.profileImgUrl}
+          src={loginMember.profileImageUrl}
           alt="프로필 이미지"
           width={80}
           height={80}

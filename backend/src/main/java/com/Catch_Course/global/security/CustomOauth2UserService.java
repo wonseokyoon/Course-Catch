@@ -24,7 +24,7 @@ public class CustomOauth2UserService extends DefaultOAuth2UserService {
         OAuth2User oauth2User = super.loadUser(userRequest);
         String providerType = userRequest.getClientRegistration().getRegistrationId();      // SSO 타입
         String oauthId = oauth2User.getName();     // 식별자
-        String username = providerType + " " + oauthId;
+        String username = providerType + "-" + oauthId;
 
         Map<String,Object> attributes = oauth2User.getAttributes();
         Map<String,Object> properties = (Map<String, Object>) attributes.get("properties");

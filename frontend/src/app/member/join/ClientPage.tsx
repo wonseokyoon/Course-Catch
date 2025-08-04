@@ -30,7 +30,7 @@ export default function ClinetPage() {
       return;
     }
 
-    const response = await client.POST("/api/v1/members/join", {
+    const response = await client.POST("/api/members/join", {
       body: {
         username,
         password,
