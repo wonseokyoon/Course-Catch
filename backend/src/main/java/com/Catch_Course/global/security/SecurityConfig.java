@@ -34,7 +34,8 @@ public class SecurityConfig {
                                 .hasRole("ADMIN")
                                 .requestMatchers(HttpMethod.GET, "/api/**")
                                 .permitAll()
-                                .requestMatchers("/api/members/login", "/api/members/join","/api/members/logout","/session")
+                                .requestMatchers("/api/members/login", "/api/members/join","/api/members/logout","/session"
+                                ,"/api/members/send-code","/api/members/verify-code")
                                 .permitAll()
                                 .anyRequest()
                                 .authenticated()

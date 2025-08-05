@@ -39,7 +39,7 @@ public class CustomOauth2UserService extends DefaultOAuth2UserService {
         }
 
         // 새로 가입하는 유저
-        Member member = memberService.join(username, "", info.nickname, info.profile_image);
+        Member member = memberService.join(username, "", info.nickname, info.email, info.profile_image);
         return new SecurityUser(member);
 
     }
@@ -47,10 +47,12 @@ public class CustomOauth2UserService extends DefaultOAuth2UserService {
     private static class SocialInfo {
         private final String nickname;
         private final String profile_image;
+        private final String email;
 
-        public SocialInfo(String nickname, String profileImage) {
+        public SocialInfo(String nickname, String profileImage, String email) {
             this.nickname = nickname;
             this.profile_image = profileImage;
+            this.email = email;
         }
     }
 
@@ -60,13 +62,15 @@ public class CustomOauth2UserService extends DefaultOAuth2UserService {
 
             String nickname = oauthId + properties.get("nickname").toString();
             String profile_image = properties.get("profile_image").toString();
+            String email = properties.get("email").toString();
 
-            return new SocialInfo(nickname, profile_image);
+            return new SocialInfo(nickname, profile_image, email);
         } else {
             String nickname = oauthId + attributes.get("name").toString();
             String profile_image = attributes.get("picture").toString();
+            String email = attributes.get("email").toString();
 
-            return new SocialInfo(nickname, profile_image);
+            return new SocialInfo(nickname, profile_image, email);
         }
     }
 
