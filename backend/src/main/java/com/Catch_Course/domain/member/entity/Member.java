@@ -39,6 +39,8 @@ public class Member extends BaseTime {
     private String email;
     private String profileImageUrl;
 
+    // todo: 이메일,비밀번호 변경 같은 로직 수행 시 사용
+    @Setter
     private boolean isEmailVerified = false;    // 이메일 인증 여부(기본값 false)
 
     public boolean isAdmin() {
@@ -77,10 +79,4 @@ public class Member extends BaseTime {
     public String getProfileImageUrl() {
         return profileImageUrl == null || profileImageUrl.isBlank() ? "https://i.imgur.com/wcxGofh.png" : profileImageUrl;
     }
-
-    // 이메일 인증상태 업데이트
-    public void setEmailVerified() {
-        isEmailVerified = true;
-    }
-
 }

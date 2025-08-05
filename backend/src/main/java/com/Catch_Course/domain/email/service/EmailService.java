@@ -18,6 +18,7 @@ public class EmailService {
 
     private final JavaMailSender mailSender;
     private final RedisTemplate<String, Object> redisTemplate;
+    private static final Duration expires = Duration.ofMinutes(5);
 
     public String createVerificationCode() {
         Random random = new Random();
@@ -30,9 +31,7 @@ public class EmailService {
                                    String profileImageUrl, String verificationCode) {
 
         TempMemberInfo info = new TempMemberInfo(username, password, nickname, email, profileImageUrl, verificationCode);
-
-        String key = email;
-        redisTemplate.opsForValue().set(key, info, Duration.ofMinutes(5));
+        redisTemplate.opsForValue().set(email, info, expires);
     }
 
     public TempMemberInfo getMemberInfo(String email) {
