@@ -55,6 +55,11 @@ dependencies {
 
 	// redis
 	implementation 'org.springframework.boot:spring-boot-starter-data-redis'
+	testImplementation 'org.springframework.boot:spring-boot-starter-data-redis'
+
+	// Container
+	testImplementation 'org.testcontainers:testcontainers:1.17.6'	// TestContainer 모듈
+	testImplementation 'org.testcontainers:junit-jupiter:1.17.6'	// TestContainer 의 Redis 모듈
 }
 
 tasks.named('test') {

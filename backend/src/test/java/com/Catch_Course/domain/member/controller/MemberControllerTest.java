@@ -5,18 +5,21 @@ import com.Catch_Course.domain.member.entity.Member;
 import com.Catch_Course.domain.member.service.MemberService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.Cookie;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.DynamicPropertyRegistry;
+import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.transaction.annotation.Transactional;
+import org.testcontainers.containers.GenericContainer;
+import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
@@ -32,6 +35,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @ActiveProfiles("test")
 @AutoConfigureMockMvc
 @Transactional
+@Testcontainers
 class MemberControllerTest {
 
     @Autowired
@@ -46,13 +50,31 @@ class MemberControllerTest {
     private String token;
     private Member loginedMember;
 
+    // Redis 컨테이너 생성 및 포트 설정
+    @Container
+    private static final GenericContainer<?> REDIS_CONTAINER =
+            new GenericContainer<>("redis:6-alpine")
+                    .withExposedPorts(6379);
+
+    // RedisTemplate이 컨테이너의 동적 포트를 사용하도록 설정
+    @DynamicPropertySource
+    static void setRedisProperties(DynamicPropertyRegistry registry) {
+        registry.add("spring.data.redis.host", REDIS_CONTAINER::getHost);
+        registry.add("spring.data.redis.port", () -> REDIS_CONTAINER.getMappedPort(6379));
+    }
+
     @BeforeEach
-    @DisplayName("user1로 로그인 셋업")
+    @DisplayName("user1로 로그인 셋업 + Redis 임베디드 서버 시작")
     void setUp() {
         loginedMember = memberService.findByUsername("user1").get();
         token = memberService.getAuthToken(loginedMember);
-        System.out.println("token: " + token);
-        System.out.println("=============셋업=============");
+    }
+
+    @AfterEach
+    @DisplayName("Redis 데이터 초기화")
+    void tearDown() {
+        // 각 테스트가 끝난 후 Redis 데이터를 초기화
+        redisTemplate.getConnectionFactory().getConnection().flushAll();
     }
 
     private ResultActions sendCodeRequest(String username, String password, String nickname, String email, String profileImageUrl) throws Exception {
