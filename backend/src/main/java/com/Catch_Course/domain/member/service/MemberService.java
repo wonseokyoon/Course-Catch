@@ -4,11 +4,13 @@ import com.Catch_Course.domain.member.entity.Member;
 import com.Catch_Course.domain.member.repository.MemberRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Map;
 import java.util.Optional;
 
 @Service
+@Transactional
 @RequiredArgsConstructor
 public class MemberService {
 
@@ -23,6 +25,7 @@ public class MemberService {
                 .nickname(nickname)
                 .email(email)
                 .profileImageUrl(profileImageUrl)
+                .isEmailVerified(true)
                 .build();
 
         return memberRepository.save(member);
