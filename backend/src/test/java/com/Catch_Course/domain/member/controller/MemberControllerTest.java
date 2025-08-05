@@ -1,5 +1,6 @@
 package com.Catch_Course.domain.member.controller;
 
+import com.Catch_Course.domain.email.dto.TempMemberInfo;
 import com.Catch_Course.domain.member.entity.Member;
 import com.Catch_Course.domain.member.service.MemberService;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -10,6 +11,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
@@ -38,6 +40,9 @@ class MemberControllerTest {
     @Autowired
     private MemberService memberService;
 
+    @Autowired
+    private RedisTemplate<String, Object> redisTemplate;
+
     private String token;
     private Member loginedMember;
 
@@ -65,6 +70,21 @@ class MemberControllerTest {
                 ).andDo(print());
     }
 
+    private ResultActions verifyAndJoinRequest(String email, String verificationCode) throws Exception {
+        Map<String, String> requestBody = Map.of("email", email, "verificationCode", verificationCode);
+
+        // Map -> Json 변환
+        ObjectMapper objectMapper = new ObjectMapper();
+        String json = objectMapper.writeValueAsString(requestBody);
+
+        return mvc
+                .perform(
+                        post("/api/members/verify-code")
+                                .content(json)
+                                .contentType(new MediaType(MediaType.APPLICATION_JSON, StandardCharsets.UTF_8))
+                ).andDo(print());
+    }
+
     @Test
     @DisplayName("회원 가입 1단계 - 인증 번호 발송")
     void join() throws Exception {
@@ -80,6 +100,32 @@ class MemberControllerTest {
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.code").value("201-1"))
                 .andExpect(jsonPath("$.msg").value("인증 코드가 메일로 전송되었습니다."));
+    }
+
+    @Test
+    @DisplayName("회원 가입 2단계 - 인증 번호 검증과 회원 정보 생성")
+    void join2() throws Exception {
+        String username = "newUser1";
+        String password = "password";
+        String nickname = "newNickname1";
+        String email = "newEmail1@example.com";
+        String profileImageUrl = "newProfileImageUrl";
+
+        // 회원가입 1단계
+        sendCodeRequest(username, password, nickname, email, profileImageUrl);
+
+        // 인증번호를 가져오는 로직
+        Object object = redisTemplate.opsForValue().get(email);
+        TempMemberInfo info = (TempMemberInfo) object;
+
+        ResultActions resultActions = verifyAndJoinRequest(email, info.getVerificationCode());
+        Member member = memberService.findByUsername(username).get();
+        assertThat(member.getNickname()).isEqualTo(nickname);
+
+        resultActions
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.code").value("201-2"))
+                .andExpect(jsonPath("$.msg").value("인증이 완료되었습니다. 회원가입을 축하합니다."));
     }
 
     private ResultActions loginRequest(String username, String password) throws Exception {
