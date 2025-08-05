@@ -15,6 +15,14 @@ jobs:
     defaults:
       run:
         working-directory: ./backend
+    env:
+      SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_KAKAO_CLIENT_ID: ${{ secrets.KAKAO_CLIENT_ID }}
+      SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+      SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
+      SPRING_MAIL_USERNAME: ${{ secrets.SPRING_MAIL_USERNAME }}
+      SPRING_MAIL_PASSWORD: ${{ secrets.SPRING_MAIL_PASSWORD }}
+      CUSTOM_JWT_SECRET_KEY: ${{ secrets.CUSTOM_JWT_SECRET_KEY }}
+      SPRING_DATA_REDIS_HOST: redis
     services:
       redis:
         image: redis:6-alpine
@@ -80,15 +88,16 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: ./backend 
+        working-directory: ./backend
     steps:
       - uses: actions/checkout@v4
-
+      
       - name: application-secret.yml 생성
         env:
           ACTIONS_STEP_DEBUG: true
-          NO_HTML: ${{ secrets.APPLICATION_SECRET }}
-        run: echo "APPLICATION_SECRET" > src/main/resources/application-secret.yml
+          APPLICATION_SECRET: ${{ secrets.APPLICATION_SECRET }}
+        run: |
+          echo "$APPLICATION_SECRET" > src/main/resources/application-secret.yml
 
       - name: Docker Buildx 설치
         uses: docker/setup-buildx-action@v2
