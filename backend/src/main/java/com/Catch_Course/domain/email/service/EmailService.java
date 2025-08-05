@@ -2,13 +2,13 @@ package com.Catch_Course.domain.email.service;
 
 import com.Catch_Course.domain.email.dto.TempMemberInfo;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.time.Duration;
 import java.util.Random;
 
 @Service
@@ -17,7 +17,7 @@ import java.util.Random;
 public class EmailService {
 
     private final JavaMailSender mailSender;
-    private final Map<String, TempMemberInfo> tempMemberInfo = new HashMap<>();
+    private final RedisTemplate<String, Object> redisTemplate;
 
     public String createVerificationCode() {
         Random random = new Random();
@@ -29,16 +29,23 @@ public class EmailService {
                                    String nickname, String password,
                                    String profileImageUrl, String verificationCode) {
 
-        tempMemberInfo.put(email, new TempMemberInfo(username, password, nickname, email, profileImageUrl, verificationCode));
-        // todo: 스케줄링 도입하여 5분뒤 삭제
+        TempMemberInfo info = new TempMemberInfo(username, password, nickname, email, profileImageUrl, verificationCode);
+
+        String key = email;
+        redisTemplate.opsForValue().set(key, info, Duration.ofMinutes(5));
     }
 
     public TempMemberInfo getMemberInfo(String email) {
-        // todo: 만료 시간 체크
-        return tempMemberInfo.get(email);
+        Object info = redisTemplate.opsForValue().get(email);
+        if (info != null) {
+            return (TempMemberInfo) info;
+        }
+        return null;
     }
 
-    // todo: 인증 완료되면 삭제
+    public void deleteTempMemberInfo(String email) {
+        redisTemplate.delete(email);
+    }
 
     // 메일 전송
     public void sendVerificationCode(String email, String verificationCode) {
@@ -53,6 +60,4 @@ public class EmailService {
 
         mailSender.send(message);
     }
-
-    //
 }
