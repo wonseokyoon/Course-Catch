@@ -46,6 +46,20 @@ dependencies {
 
 	// Swagger
 	implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.4'
+
+	// oauth
+	implementation 'org.springframework.boot:spring-boot-starter-oauth2-client'
+
+	// 메일 인증
+	implementation 'org.springframework.boot:spring-boot-starter-mail'
+
+	// redis
+	implementation 'org.springframework.boot:spring-boot-starter-data-redis'
+	testImplementation 'org.springframework.boot:spring-boot-starter-data-redis'
+
+	// Container
+	testImplementation 'org.testcontainers:testcontainers:1.17.6'	// TestContainer 모듈
+	testImplementation 'org.testcontainers:junit-jupiter:1.17.6'	// TestContainer 의 Redis 모듈
 }
 
 tasks.named('test') {

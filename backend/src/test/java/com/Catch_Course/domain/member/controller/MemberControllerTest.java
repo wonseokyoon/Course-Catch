@@ -1,20 +1,25 @@
 package com.Catch_Course.domain.member.controller;
 
+import com.Catch_Course.domain.email.dto.TempMemberInfo;
 import com.Catch_Course.domain.member.entity.Member;
 import com.Catch_Course.domain.member.service.MemberService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.Cookie;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.DynamicPropertyRegistry;
+import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.transaction.annotation.Transactional;
+import org.testcontainers.containers.GenericContainer;
+import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
@@ -30,6 +35,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @ActiveProfiles("test")
 @AutoConfigureMockMvc
 @Transactional
+@Testcontainers
 class MemberControllerTest {
 
     @Autowired
@@ -38,20 +44,41 @@ class MemberControllerTest {
     @Autowired
     private MemberService memberService;
 
+    @Autowired
+    private RedisTemplate<String, Object> redisTemplate;
+
     private String token;
     private Member loginedMember;
 
+    // Redis 컨테이너 생성 및 포트 설정
+    @Container
+    private static final GenericContainer<?> REDIS_CONTAINER =
+            new GenericContainer<>("redis:6-alpine")
+                    .withExposedPorts(6379);
+
+    // RedisTemplate이 컨테이너의 동적 포트를 사용하도록 설정
+    @DynamicPropertySource
+    static void setRedisProperties(DynamicPropertyRegistry registry) {
+        registry.add("spring.data.redis.host", REDIS_CONTAINER::getHost);
+        registry.add("spring.data.redis.port", () -> REDIS_CONTAINER.getMappedPort(6379));
+    }
+
     @BeforeEach
-    @DisplayName("user1로 로그인 셋업")
+    @DisplayName("user1로 로그인 셋업 + Redis 임베디드 서버 시작")
     void setUp() {
         loginedMember = memberService.findByUsername("user1").get();
         token = memberService.getAuthToken(loginedMember);
-        System.out.println("token: " + token);
-        System.out.println("=============셋업=============");
     }
 
-    private ResultActions joinRequest(String username, String password, String nickname) throws Exception {
-        Map<String, String> requestBody = Map.of("username", username, "password", password, "nickname", nickname);
+    @AfterEach
+    @DisplayName("Redis 데이터 초기화")
+    void tearDown() {
+        // 각 테스트가 끝난 후 Redis 데이터를 초기화
+        redisTemplate.getConnectionFactory().getConnection().flushAll();
+    }
+
+    private ResultActions sendCodeRequest(String username, String password, String nickname, String email, String profileImageUrl) throws Exception {
+        Map<String, String> requestBody = Map.of("username", username, "password", password, "nickname", nickname, "email", email, "profileImageUrl", profileImageUrl);
 
         // Map -> Json 변환
         ObjectMapper objectMapper = new ObjectMapper();
@@ -59,28 +86,68 @@ class MemberControllerTest {
 
         return mvc
                 .perform(
-                        post("/api/members/join")
+                        post("/api/members/send-code")
+                                .content(json)
+                                .contentType(new MediaType(MediaType.APPLICATION_JSON, StandardCharsets.UTF_8))
+                ).andDo(print());
+    }
+
+    private ResultActions verifyAndJoinRequest(String email, String verificationCode) throws Exception {
+        Map<String, String> requestBody = Map.of("email", email, "verificationCode", verificationCode);
+
+        // Map -> Json 변환
+        ObjectMapper objectMapper = new ObjectMapper();
+        String json = objectMapper.writeValueAsString(requestBody);
+
+        return mvc
+                .perform(
+                        post("/api/members/verify-code")
                                 .content(json)
                                 .contentType(new MediaType(MediaType.APPLICATION_JSON, StandardCharsets.UTF_8))
                 ).andDo(print());
     }
 
     @Test
-    @DisplayName("회원 가입")
+    @DisplayName("회원 가입 1단계 - 인증 번호 발송")
     void join() throws Exception {
         String username = "newUser1";
         String password = "password";
         String nickname = "newNickname1";
+        String email = "newEmail1@example.com";
+        String profileImageUrl = "newProfileImageUrl";
 
-        ResultActions resultActions = joinRequest(username, password, nickname);
-        Member member = memberService.findByUsername(username).get();
-
-        assertThat(member.getNickname()).isEqualTo(nickname);
+        ResultActions resultActions = sendCodeRequest(username, password, nickname, email, profileImageUrl);
 
         resultActions
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.code").value("201-1"))
-                .andExpect(jsonPath("$.msg").value("회원 가입이 완료되었습니다."));
+                .andExpect(jsonPath("$.msg").value("인증 코드가 메일로 전송되었습니다."));
+    }
+
+    @Test
+    @DisplayName("회원 가입 2단계 - 인증 번호 검증과 회원 정보 생성")
+    void join2() throws Exception {
+        String username = "newUser1";
+        String password = "password";
+        String nickname = "newNickname1";
+        String email = "newEmail1@example.com";
+        String profileImageUrl = "newProfileImageUrl";
+
+        // 회원가입 1단계
+        sendCodeRequest(username, password, nickname, email, profileImageUrl);
+
+        // 인증번호를 가져오는 로직
+        Object object = redisTemplate.opsForValue().get(email);
+        TempMemberInfo info = (TempMemberInfo) object;
+
+        ResultActions resultActions = verifyAndJoinRequest(email, info.getVerificationCode());
+        Member member = memberService.findByUsername(username).get();
+        assertThat(member.getNickname()).isEqualTo(nickname);
+
+        resultActions
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.code").value("201-2"))
+                .andExpect(jsonPath("$.msg").value("인증이 완료되었습니다. 회원가입을 축하합니다."));
     }
 
     private ResultActions loginRequest(String username, String password) throws Exception {
@@ -113,8 +180,11 @@ class MemberControllerTest {
                 .andExpect(jsonPath("$.msg").value("%s님 환영합니다.".formatted(member.getNickname())))
                 .andExpect(jsonPath("$.data.memberDto.id").value(member.getId()))    // id 검증
                 .andExpect(jsonPath("$.data.memberDto.nickname").value(member.getNickname()))    // 닉네임 검증
+                .andExpect(jsonPath("$.data.memberDto.profileImageUrl").isNotEmpty())    // profileImageUrl notnull 체크
+                .andExpect(jsonPath("$.data.memberDto.profileImageUrl").value(member.getProfileImageUrl()))    // 검증
                 .andExpect(jsonPath("$.data.apiKey").value(member.getApiKey()))    // apiKey 검증
                 .andExpect(jsonPath("$.data.accessToken").exists());    // accessToken 나오는지
+
     }
 
     private ResultActions meRequest(String accessToken) throws Exception {

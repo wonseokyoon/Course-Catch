@@ -8,6 +8,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.web.header.writers.frameoptions.XFrameOptionsHeaderWriter;
@@ -18,6 +19,8 @@ import org.springframework.security.web.header.writers.frameoptions.XFrameOption
 public class SecurityConfig {
 
     private final CustomAuthenticationFilter customAuthenticationFilter;
+    private final CustomAuthorizationRequestResolver customAuthorizationRequestResolver;
+    private final CustomAuthenticationSuccessHandler customAuthenticationSuccessHandler;
 
     @Bean
     SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
@@ -31,7 +34,8 @@ public class SecurityConfig {
                                 .hasRole("ADMIN")
                                 .requestMatchers(HttpMethod.GET, "/api/**")
                                 .permitAll()
-                                .requestMatchers("/api/members/login", "/api/members/join","/api/members/logout")
+                                .requestMatchers("/api/members/login", "/api/members/join","/api/members/logout","/session"
+                                ,"/api/members/send-code","/api/members/verify-code")
                                 .permitAll()
                                 .anyRequest()
                                 .authenticated()
@@ -42,6 +46,18 @@ public class SecurityConfig {
 
                 // csrf 비활성화
                 .csrf(csrf -> csrf.disable())
+                .sessionManagement(sessionManagement -> {
+                    sessionManagement.sessionCreationPolicy(SessionCreationPolicy.STATELESS);
+                })
+                // CORS
+                .cors(cors -> {})
+                .oauth2Login(oauth2->{
+                    oauth2.authorizationEndpoint(
+                            authorizationEndpoint -> authorizationEndpoint
+                                    .authorizationRequestResolver(customAuthorizationRequestResolver)
+                    );
+                    oauth2.successHandler(customAuthenticationSuccessHandler);
+                })
                 .addFilterBefore(customAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
 
                 // 예외 처리
