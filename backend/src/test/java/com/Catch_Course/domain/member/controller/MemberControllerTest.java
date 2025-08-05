@@ -50,8 +50,8 @@ class MemberControllerTest {
         System.out.println("=============셋업=============");
     }
 
-    private ResultActions joinRequest(String username, String password, String nickname) throws Exception {
-        Map<String, String> requestBody = Map.of("username", username, "password", password, "nickname", nickname);
+    private ResultActions sendCodeRequest(String username, String password, String nickname, String email, String profileImageUrl) throws Exception {
+        Map<String, String> requestBody = Map.of("username", username, "password", password, "nickname", nickname, "email", email, "profileImageUrl", profileImageUrl);
 
         // Map -> Json 변환
         ObjectMapper objectMapper = new ObjectMapper();
@@ -59,28 +59,27 @@ class MemberControllerTest {
 
         return mvc
                 .perform(
-                        post("/api/members/join")
+                        post("/api/members/send-code")
                                 .content(json)
                                 .contentType(new MediaType(MediaType.APPLICATION_JSON, StandardCharsets.UTF_8))
                 ).andDo(print());
     }
 
     @Test
-    @DisplayName("회원 가입")
+    @DisplayName("회원 가입 1단계 - 인증 번호 발송")
     void join() throws Exception {
         String username = "newUser1";
         String password = "password";
         String nickname = "newNickname1";
+        String email = "newEmail1@example.com";
+        String profileImageUrl = "newProfileImageUrl";
 
-        ResultActions resultActions = joinRequest(username, password, nickname);
-        Member member = memberService.findByUsername(username).get();
-
-        assertThat(member.getNickname()).isEqualTo(nickname);
+        ResultActions resultActions = sendCodeRequest(username, password, nickname, email, profileImageUrl);
 
         resultActions
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.code").value("201-1"))
-                .andExpect(jsonPath("$.msg").value("회원 가입이 완료되었습니다."));
+                .andExpect(jsonPath("$.msg").value("인증 코드가 메일로 전송되었습니다."));
     }
 
     private ResultActions loginRequest(String username, String password) throws Exception {

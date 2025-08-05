@@ -89,7 +89,7 @@ public class MemberController {
         emailService.deleteTempMemberInfo(body.email);
 
         return new RsData<>(
-                "201-1",
+                "201-2",
                 "인증이 완료되었습니다. 회원가입을 축하합니다.",
                 new MemberDto(member)
         );
