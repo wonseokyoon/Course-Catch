@@ -82,12 +82,13 @@ public class MemberController {
         }
 
         // 회원 생성
-        memberService.join(tempMemberInfo.getUsername(), tempMemberInfo.getPassword(),
+        Member member = memberService.join(tempMemberInfo.getUsername(), tempMemberInfo.getPassword(),
                 tempMemberInfo.getNickname(), tempMemberInfo.getEmail(), tempMemberInfo.getProfileImageUrl());
 
         return new RsData<>(
                 "201-1",
-                "인증 코드가 메일로 전송되었습니다."
+                "인증이 완료되었습니다. 회원가입을 축하합니다.",
+                new MemberDto(member)
         );
     }
 
