@@ -41,7 +41,6 @@ public class CustomOauth2UserService extends DefaultOAuth2UserService {
         // 새로 가입하는 유저
         Member member = memberService.join(username, "", info.nickname, info.email, info.profile_image);
         return new SecurityUser(member);
-
     }
 
     private static class SocialInfo {
