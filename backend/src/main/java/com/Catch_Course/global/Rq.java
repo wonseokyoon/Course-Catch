@@ -43,7 +43,7 @@ public class Rq {
 
     public void setLogin(Member member) {
         // 유저 정보 생성
-        UserDetails user = new SecurityUser(member.getId(), member.getUsername(), "", member.getAuthorities());
+        UserDetails user = new SecurityUser(member.getId(), member.getUsername(), "", member.getNickname(), member.getAuthorities());
 
         // 인증 정보 저장소
         SecurityContextHolder.getContext().setAuthentication(
