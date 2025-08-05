@@ -4,23 +4,28 @@ import com.Catch_Course.domain.member.entity.Member;
 import com.Catch_Course.domain.member.repository.MemberRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Map;
 import java.util.Optional;
 
 @Service
+@Transactional
 @RequiredArgsConstructor
 public class MemberService {
 
     private final MemberRepository memberRepository;
     private final AuthTokenService authTokenService;
 
-    public Member join(String username, String password, String nickname) {
+    public Member join(String username, String password, String nickname, String email, String profileImageUrl) {
         Member member = Member.builder()
                 .username(username)
                 .password(password)
                 .apiKey(username)
                 .nickname(nickname)
+                .email(email)
+                .profileImageUrl(profileImageUrl)
+                .isEmailVerified(true)
                 .build();
 
         return memberRepository.save(member);
@@ -73,4 +78,7 @@ public class MemberService {
         return authTokenService.createAccessToken(member);
     }
 
+    public boolean existByEmail(String email) {
+        return memberRepository.existsByEmail(email);
+    }
 }
