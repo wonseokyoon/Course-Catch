@@ -85,6 +85,9 @@ public class MemberController {
         Member member = memberService.join(tempMemberInfo.getUsername(), tempMemberInfo.getPassword(),
                 tempMemberInfo.getNickname(), tempMemberInfo.getEmail(), tempMemberInfo.getProfileImageUrl());
 
+        // 임시 정보 삭제
+        emailService.deleteTempMemberInfo(body.email);
+
         return new RsData<>(
                 "201-1",
                 "인증이 완료되었습니다. 회원가입을 축하합니다.",
