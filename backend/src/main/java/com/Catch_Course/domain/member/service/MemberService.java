@@ -112,8 +112,17 @@ public class MemberService {
         memberRepository.save(member);
     }
 
-    public void restoreMember(Member member) {
+    public Member restoreMember(Member member) {
         member.setDeleteFlag(false);
-        memberRepository.save(member);
+        return memberRepository.save(member);
+    }
+
+    public Member updateMember(Long memberId, String nickname, String profileImageUrl) {
+        Member member = memberRepository.findById(memberId)
+                .orElseThrow(() -> new ServiceException("404-4","회원을 찾을 수 없습니다."));
+
+        member.setNickname(nickname);
+        member.setProfileImageUrl(profileImageUrl);
+        return memberRepository.save(member);
     }
 }

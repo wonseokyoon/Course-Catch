@@ -194,16 +194,33 @@ public class MemberController {
         emailService.restoreVerifyCode(body.email, body.verificationCode);
 
         // 계정 복구
-        memberService.restoreMember(member);
+        member = memberService.restoreMember(member);
 
         // Redis에서 인증 정보 삭제
         emailService.deleteRestoreData(body.email);
-
 
         return new RsData<>(
                 "201-3",
                 "계정이 복구되었습니다.",
                 new MemberDto(member)
+        );
+    }
+
+    record UpdateProfileReqBody(@NotBlank @Length(min = 3) String nickname,
+                       String profileImageUrl) {
+    }
+
+    @Operation(summary = "닉네임, 프로필 수정")
+    @PutMapping("/me")
+    public RsData<MemberDto> updateProfile(@RequestBody @Valid UpdateProfileReqBody body) {
+        Member dummyMember = rq.getDummyMember();
+        Long memberId = dummyMember.getId();    // 동시성 고려해서 실제 객체 대신 id 전달
+
+        Member updatedMember = memberService.updateMember(memberId,body.nickname,body.profileImageUrl);
+        return new RsData<>(
+                "200-1",
+                "내 정보 조회가 완료되었습니다.",
+                new MemberDto(updatedMember)
         );
     }
 }
