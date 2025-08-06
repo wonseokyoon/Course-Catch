@@ -109,7 +109,7 @@ class MemberControllerTest {
 
     @Test
     @DisplayName("회원 가입 1단계 - 인증 번호 발송")
-    void join() throws Exception {
+    void joinAndSendMail() throws Exception {
         String username = "newUser1";
         String password = "password";
         String nickname = "newNickname1";
@@ -125,8 +125,61 @@ class MemberControllerTest {
     }
 
     @Test
+    @DisplayName("회원 가입 1단계 실패 - 이미 존재하는 이메일")
+    void joinAndSendMail2() throws Exception {
+        String username = "newUser1";
+        String password = "password";
+        String nickname = "newNickname1";
+        String email = "newEmail1@example.com";
+        String profileImageUrl = "newProfileImageUrl";
+
+        // 회원 가입
+        memberService.join(username, password, nickname, email, profileImageUrl);
+
+        String username2 = "newUser2";
+        String password2 = "password2";
+        String nickname2 = "newNickname2";
+        String email2 = "newEmail1@example.com";        // 이미 존재하는 이메일
+        String profileImageUrl2 = "newProfileImageUrl2";
+
+        ResultActions resultActions = sendCodeRequest(username2, password2, nickname2, email2, profileImageUrl2);
+
+        resultActions
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("400-2"))
+                .andExpect(jsonPath("$.msg").value("중복된 이메일입니다."));
+    }
+
+    @Test
+    @DisplayName("회원 가입 1단계 실패 - 이미 존재하는 아이디")
+    void joinAndSendMail3() throws Exception {
+        String username = "newUser1";
+        String password = "password";
+        String nickname = "newNickname1";
+        String email = "newEmail1@example.com";
+        String profileImageUrl = "newProfileImageUrl";
+
+        // 회원 가입
+        memberService.join(username, password, nickname, email, profileImageUrl);
+
+        String username2 = "newUser1";          // 이미 존재하는 아이디
+        String password2 = "password2";
+        String nickname2 = "newNickname2";
+        String email2 = "newEmail2@example.com";
+        String profileImageUrl2 = "newProfileImageUrl2";
+
+        ResultActions resultActions = sendCodeRequest(username2, password2, nickname2, email2, profileImageUrl2);
+
+        resultActions
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("400-1"))
+                .andExpect(jsonPath("$.msg").value("중복된 아이디입니다."));
+    }
+
+
+    @Test
     @DisplayName("회원 가입 2단계 - 인증 번호 검증과 회원 정보 생성")
-    void join2() throws Exception {
+    void joinAndVerification() throws Exception {
         String username = "newUser1";
         String password = "password";
         String nickname = "newNickname1";
@@ -148,6 +201,59 @@ class MemberControllerTest {
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.code").value("201-2"))
                 .andExpect(jsonPath("$.msg").value("인증이 완료되었습니다. 회원가입을 축하합니다."));
+    }
+
+    @Test
+    @DisplayName("회원 가입 2단계 실패 - 유효하지 않은 인증 요청(잘못된 메일이나, 인증 시간이 지난 메일)")
+    void joinAndVerification2() throws Exception {
+        String username = "newUser1";
+        String password = "password";
+        String nickname = "newNickname1";
+        String email = "newEmail1@example.com";
+        String profileImageUrl = "newProfileImageUrl";
+
+        // 회원가입 1단계
+        sendCodeRequest(username, password, nickname, email, profileImageUrl);
+
+        // 인증번호를 가져오는 로직
+        Object object = redisTemplate.opsForValue().get(email);
+        // 임시 정보는 생성이 되었어야함
+        assertThat(object).isNotNull();
+        TempMemberInfo info = (TempMemberInfo) object;
+
+        // 잘못된 이메일이 입력
+        ResultActions resultActions = verifyAndJoinRequest("incorrectEmail@example.com", info.getVerificationCode());
+
+        resultActions
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.code").value("401-4"))
+                .andExpect(jsonPath("$.msg").value("유효하지 않은 인증 요청입니다."));
+    }
+
+    @Test
+    @DisplayName("회원 가입 2단계 실패 - 잘못된 인증 코드(틀렸거나, 재전송했을때 이전 인증 코드 입력)")
+    void joinAndVerification3() throws Exception {
+        String username = "newUser1";
+        String password = "password";
+        String nickname = "newNickname1";
+        String email = "newEmail1@example.com";
+        String profileImageUrl = "newProfileImageUrl";
+
+        // 회원가입 1단계
+        sendCodeRequest(username, password, nickname, email, profileImageUrl);
+
+        // 인증번호를 가져오는 로직
+        Object object = redisTemplate.opsForValue().get(email);
+        // 임시 정보는 생성이 되었어야함
+        assertThat(object).isNotNull();
+
+        // 잘못된 인증 코드 입력
+        ResultActions resultActions = verifyAndJoinRequest(email, "incorrectCode");
+
+        resultActions
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.code").value("401-5"))
+                .andExpect(jsonPath("$.msg").value("잘못된 인증 코드입니다."));
     }
 
     private ResultActions loginRequest(String username, String password) throws Exception {

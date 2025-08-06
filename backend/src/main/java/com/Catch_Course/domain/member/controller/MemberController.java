@@ -39,16 +39,10 @@ public class MemberController {
     @Operation(summary = "회원 가입 1단계", description = "이메일 인증 코드 발송")
     @PostMapping("/send-code")
     public RsData<MemberDto> sendCode(@RequestBody @Valid JoinReqBody body) {
+        // 인증 전 체크
+        memberService.checkVerification(body.username,body.email);
 
-        memberService.findByUsername(body.username())
-                .ifPresent(member -> {
-                    throw new ServiceException("400-1", "중복된 아이디입니다.");
-                });
-
-        if (memberService.existByEmail(body.email())) {
-            throw new ServiceException("400-2", "중복된 이메일입니다.");
-        }
-
+        // 인증 코드 생성
         String verificationCode = emailService.createVerificationCode();
 
         // 임시 정보 생성
@@ -70,22 +64,14 @@ public class MemberController {
     @Operation(summary = "회원 가입 2단계", description = "인증 코드 확인 및 최종 가입")
     @PostMapping("/verify-code")
     public RsData<MemberDto> verifyAndJoin(@RequestBody @Valid JoinReqBody2 body) {
-        // 임시 인증 정보
-        TempMemberInfo tempMemberInfo = emailService.getMemberInfo(body.email);
-
-        if (tempMemberInfo == null) {
-            throw new ServiceException("401-4", "유효하지 않은 인증 요청입니다.");
-        }
-
-        if (!tempMemberInfo.getVerificationCode().equals(body.verificationCode)) {
-            throw new ServiceException("401-5", "잘못된 인증 코드입니다.");
-        }
+        // 인증 코드 검증 및 임시 회원 정보 반환
+        TempMemberInfo tempMemberInfo = emailService.verifyCode(body.email, body.verificationCode);
 
         // 회원 생성
         Member member = memberService.join(tempMemberInfo.getUsername(), tempMemberInfo.getPassword(),
                 tempMemberInfo.getNickname(), tempMemberInfo.getEmail(), tempMemberInfo.getProfileImageUrl());
 
-        // 임시 정보 삭제
+        // 임시 회원 정보 삭제
         emailService.deleteTempMemberInfo(body.email);
 
         return new RsData<>(
