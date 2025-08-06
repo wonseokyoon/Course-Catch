@@ -556,6 +556,8 @@ class MemberControllerTest {
         resultActions
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value("200-1"))
-                .andExpect(jsonPath("$.msg").value("프로필 수정이 완료되었습니다."));
+                .andExpect(jsonPath("$.msg").value("프로필 수정이 완료되었습니다."))
+                .andExpect(jsonPath("$.data.nickname").value(nickname))
+                .andExpect(jsonPath("$.data.profileImageUrl").value(profileImageUrl));
     }
 }
