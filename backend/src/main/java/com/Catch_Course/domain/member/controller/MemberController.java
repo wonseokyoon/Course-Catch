@@ -188,7 +188,7 @@ public class MemberController {
     public RsData<?> verifyAndRestore(@RequestBody @Valid JoinReqBody2 body) {
         // DB에 없는 메일
         Member member = memberService.findByEmail(body.email)
-                .orElseThrow(() -> new ServiceException("403","복구 가능한 메일이 아닙니다."));
+                .orElseThrow(() -> new ServiceException("403-2","복구 가능한 메일이 아닙니다."));
 
         // 인증 코드 검증
         emailService.restoreVerifyCode(body.email, body.verificationCode);

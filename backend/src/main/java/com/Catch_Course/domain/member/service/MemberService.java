@@ -120,4 +120,9 @@ public class MemberService {
         member.setDeleteFlag(false);
         memberRepository.save(member);
     }
+
+    // 테스트용 하드 삭제
+    public void deleteMember(Member member) {
+        memberRepository.delete(member);
+    }
 }

@@ -91,7 +91,7 @@ public class EmailService {
         String key = RESTORE_PREFIX + email;
         String redisValue = (String) redisTemplate.opsForValue().get(key);
 
-        if (redisValue == null) {
+        if (redisValue == null) {   // 코드 만료
             throw new ServiceException("401-4", "유효하지 않은 인증 요청입니다.");
         }
         if (!redisValue.equals(verificationCode)) {

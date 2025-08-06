@@ -470,4 +470,62 @@ class MemberControllerTest {
         assertThat(member.isDeleteFlag()).isFalse();
     }
 
+    @Test
+    @DisplayName("계정 복원 2단계 실패 - 복구 가능한 메일이 아닌 경우")
+    void restoreAndVerification2() throws Exception {
+        String email = "user1@example.com";
+        Member member = memberService.findByEmail(email).get();
+        memberService.deleteMember(member);     // 하드 삭제
+
+        // 메일 전송
+        restoreAndSendRequest(email);
+
+        // 인증번호
+        String verificationCode  = (String) redisTemplate.opsForValue().get(RESTORE_PREFIX + email);
+        ResultActions resultActions = restoreAndVerificationRequest(email, verificationCode);
+
+        resultActions
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value("403-2"))
+                .andExpect(jsonPath("$.msg").value("복구 가능한 메일이 아닙니다."));
+    }
+
+    @Test
+    @DisplayName("계정 복원 2단계 실패 - 인증 코드 만료")
+    void restoreAndVerification3() throws Exception {
+        String email = "user1@example.com";
+
+        // 메일 전송
+        restoreAndSendRequest(email);
+
+        // Redis에서 삭제
+        String verificationCode  = (String) redisTemplate.opsForValue().get(RESTORE_PREFIX + email);
+        redisTemplate.delete(RESTORE_PREFIX + email);
+//        redisTemplate.opsForValue().set(RESTORE_PREFIX + email, "expired");
+        ResultActions resultActions = restoreAndVerificationRequest(email, verificationCode);
+
+        resultActions
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.code").value("401-4"))
+                .andExpect(jsonPath("$.msg").value("유효하지 않은 인증 요청입니다."));
+    }
+
+    @Test
+    @DisplayName("계정 복원 2단계 실패 - 잘못된 인증 코드")
+    void restoreAndVerification4() throws Exception {
+        String email = "user1@example.com";
+
+        // 메일 전송
+        restoreAndSendRequest(email);
+
+        // Redis에서 삭제
+        String verificationCode  = (String) redisTemplate.opsForValue().get(RESTORE_PREFIX + email);
+        redisTemplate.opsForValue().set(RESTORE_PREFIX + email, "incorrectCode");
+        ResultActions resultActions = restoreAndVerificationRequest(email, verificationCode);
+
+        resultActions
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.code").value("401-5"))
+                .andExpect(jsonPath("$.msg").value("잘못된 인증 코드입니다."));
+    }
 }
