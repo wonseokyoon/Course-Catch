@@ -219,7 +219,7 @@ public class MemberController {
         Member updatedMember = memberService.updateMember(memberId,body.nickname,body.profileImageUrl);
         return new RsData<>(
                 "200-1",
-                "내 정보 조회가 완료되었습니다.",
+                "프로필 수정이 완료되었습니다.",
                 new MemberDto(updatedMember)
         );
     }

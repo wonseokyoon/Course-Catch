@@ -456,7 +456,7 @@ class MemberControllerTest {
         restoreAndSendRequest(email);
 
         // 인증번호
-        String verificationCode  = (String) redisTemplate.opsForValue().get(RESTORE_PREFIX + email);
+        String verificationCode = (String) redisTemplate.opsForValue().get(RESTORE_PREFIX + email);
         ResultActions resultActions = restoreAndVerificationRequest(email, verificationCode);
 
         resultActions
@@ -481,7 +481,7 @@ class MemberControllerTest {
         restoreAndSendRequest(email);
 
         // 인증번호
-        String verificationCode  = (String) redisTemplate.opsForValue().get(RESTORE_PREFIX + email);
+        String verificationCode = (String) redisTemplate.opsForValue().get(RESTORE_PREFIX + email);
         ResultActions resultActions = restoreAndVerificationRequest(email, verificationCode);
 
         resultActions
@@ -499,7 +499,7 @@ class MemberControllerTest {
         restoreAndSendRequest(email);
 
         // Redis에서 삭제
-        String verificationCode  = (String) redisTemplate.opsForValue().get(RESTORE_PREFIX + email);
+        String verificationCode = (String) redisTemplate.opsForValue().get(RESTORE_PREFIX + email);
         redisTemplate.delete(RESTORE_PREFIX + email);
 //        redisTemplate.opsForValue().set(RESTORE_PREFIX + email, "expired");
         ResultActions resultActions = restoreAndVerificationRequest(email, verificationCode);
@@ -519,7 +519,7 @@ class MemberControllerTest {
         restoreAndSendRequest(email);
 
         // Redis에서 삭제
-        String verificationCode  = (String) redisTemplate.opsForValue().get(RESTORE_PREFIX + email);
+        String verificationCode = (String) redisTemplate.opsForValue().get(RESTORE_PREFIX + email);
         redisTemplate.opsForValue().set(RESTORE_PREFIX + email, "incorrectCode");
         ResultActions resultActions = restoreAndVerificationRequest(email, verificationCode);
 
@@ -527,5 +527,35 @@ class MemberControllerTest {
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.code").value("401-5"))
                 .andExpect(jsonPath("$.msg").value("잘못된 인증 코드입니다."));
+    }
+
+    private ResultActions updateProfileRequest(String accessToken, String nickname, String profileImageUrl) throws Exception {
+        Map<String, String> requestBody = Map.of("nickname", nickname, "profileImageUrl", profileImageUrl);
+
+        // Map -> Json 변환
+        ObjectMapper objectMapper = new ObjectMapper();
+        String json = objectMapper.writeValueAsString(requestBody);
+
+        return mvc
+                .perform(
+                        put("/api/members/me")
+                                .header("Authorization", "Bearer " + accessToken)
+                                .content(json)
+                                .contentType(new MediaType(MediaType.APPLICATION_JSON, StandardCharsets.UTF_8))
+                ).andDo(print());
+    }
+
+    @Test
+    @DisplayName("프로필 수정 - 닉네임, 이메일 변경")
+    void updateProfile() throws Exception {
+        String nickname = "newNickname1";
+        String profileImageUrl = "newProfileImageUrl";
+
+        ResultActions resultActions = updateProfileRequest(token, nickname, profileImageUrl);
+
+        resultActions
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value("200-1"))
+                .andExpect(jsonPath("$.msg").value("프로필 수정이 완료되었습니다."));
     }
 }
