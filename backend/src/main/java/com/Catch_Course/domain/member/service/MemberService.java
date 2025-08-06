@@ -2,6 +2,7 @@ package com.Catch_Course.domain.member.service;
 
 import com.Catch_Course.domain.member.entity.Member;
 import com.Catch_Course.domain.member.repository.MemberRepository;
+import com.Catch_Course.global.exception.ServiceException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -80,5 +81,16 @@ public class MemberService {
 
     public boolean existByEmail(String email) {
         return memberRepository.existsByEmail(email);
+    }
+
+    // 인증 전 중복 체크
+    public void checkVerification(String username, String email) {
+        findByUsername(username).ifPresent(member -> {
+            throw new ServiceException("400-1", "중복된 아이디입니다.");
+        });
+
+        if (existByEmail(email)) {
+            throw new ServiceException("400-2", "중복된 이메일입니다.");
+        }
     }
 }
