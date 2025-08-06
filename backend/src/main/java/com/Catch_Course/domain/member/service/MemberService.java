@@ -41,6 +41,10 @@ public class MemberService {
         return memberRepository.findByUsernameAndDeleteFlagFalse(username);
     }
 
+    public Optional<Member> findByUsernameAll(String username) {
+        return memberRepository.findByUsername(username);
+    }
+
     public Optional<Member> findById(long id) {
         return memberRepository.findById(id);
     }
@@ -124,5 +128,10 @@ public class MemberService {
         member.setNickname(nickname);
         member.setProfileImageUrl(profileImageUrl);
         return memberRepository.save(member);
+    }
+
+    // 테스트용 하드 삭제
+    public void deleteMember(Member member) {
+        memberRepository.delete(member);
     }
 }
