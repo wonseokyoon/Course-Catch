@@ -27,6 +27,7 @@ public class MemberService {
                 .email(email)
                 .profileImageUrl(profileImageUrl)
                 .isEmailVerified(true)
+                .deleteFlag(false)
                 .build();
 
         return memberRepository.save(member);
@@ -37,7 +38,7 @@ public class MemberService {
     }
 
     public Optional<Member> findByUsername(String username) {
-        return memberRepository.findByUsername(username);
+        return memberRepository.findByUsernameAndDeleteFlagFalse(username);
     }
 
     public Optional<Member> findById(long id) {
@@ -92,5 +93,15 @@ public class MemberService {
         if (existByEmail(email)) {
             throw new ServiceException("400-2", "중복된 이메일입니다.");
         }
+    }
+
+    public void withdraw(Long memberId) {
+        // 동시성 문제를 위해 id를 전달하여 DB 호출
+        // todo: 이후 수강한 강의를 취소하는것까지 구현
+        Member member = memberRepository.findById(memberId)
+                .orElseThrow(() -> new ServiceException("404-4","회원을 찾을 수 없습니다."));
+
+        member.setDeleteFlag(true);
+        memberRepository.save(member);
     }
 }

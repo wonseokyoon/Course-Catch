@@ -10,7 +10,6 @@ import com.Catch_Course.global.dto.RsData;
 import com.Catch_Course.global.exception.ServiceException;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Email;
@@ -81,27 +80,6 @@ public class MemberController {
         );
     }
 
-
-//    @Operation(summary = "회원 가입")
-//    @PostMapping("/join")
-//    public RsData<MemberDto> join(@RequestBody @Valid JoinReqBody body) {
-//
-//        memberService.findByUsername(body.username())
-//                .ifPresent(member -> {
-//                    throw new ServiceException("400-1", "중복된 아이디입니다.");
-//                });
-//
-//
-//        Member member = memberService.join(body.username(), body.password(), body.nickname(), "");
-//
-//        return new RsData<>(
-//                "201-1",
-//                "회원 가입이 완료되었습니다.",
-//                new MemberDto(member)
-//        );
-//    }
-
-
     record LoginReqBody(@NotBlank @Length(min = 3) String username,
                         @NotBlank @Length(min = 3) String password) {
     }
@@ -111,7 +89,7 @@ public class MemberController {
 
     @Operation(summary = "로그인", description = "로그인 성공 시 ApiKey와 AccessToken 반환. 쿠키로도 반환")
     @PostMapping("/login")
-    public RsData<LoginResBody> login(@RequestBody @Valid LoginReqBody body, HttpServletResponse response) {
+    public RsData<LoginResBody> login(@RequestBody @Valid LoginReqBody body) {
 
         Member member = memberService.findByUsername(body.username())
                 .orElseThrow(() -> new ServiceException("401-2", "아이디 또는 비밀번호가 일치하지 않습니다."));
@@ -157,10 +135,29 @@ public class MemberController {
         rq.removeCookie("accessToken");
         rq.removeCookie("apiKey");
 
+        // 세션 무효화
         session.invalidate();
         return new RsData<>(
                 "200-1",
                 "로그아웃이 완료되었습니다."
+        );
+    }
+
+    @Operation(summary = "회원 탈퇴")
+    @DeleteMapping("/withdraw")
+    public RsData<Void> withdraw(HttpSession session) {
+        Member member = rq.getMember(rq.getDummyMember());
+
+        memberService.withdraw(member.getId());
+
+        // 탈퇴 후 로그아웃 처리
+        rq.removeCookie("accessToken");
+        rq.removeCookie("apiKey");
+        session.invalidate();
+
+        return new RsData<>(
+                "200-1",
+                "회원탈퇴가 완료되었습니다."
         );
     }
 }
