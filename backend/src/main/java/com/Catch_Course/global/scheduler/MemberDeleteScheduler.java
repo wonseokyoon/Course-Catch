@@ -15,6 +15,7 @@ public class MemberDeleteScheduler {
     private final MemberRepository memberRepository;
 
     @Scheduled(cron = "0 0 0 * * *")
+//    @Scheduled(cron = "30 53 17 * * *")
     public void deleteMember() {
         // 탈퇴 후 1년이 지난 회원 조회
         LocalDateTime oneYearAgo = LocalDateTime.now().minusYears(1);
@@ -23,6 +24,5 @@ public class MemberDeleteScheduler {
         if(!deleteList.isEmpty()) {
             memberRepository.deleteAll(deleteList);
         }
-
     }
 }

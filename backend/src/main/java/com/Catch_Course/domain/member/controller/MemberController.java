@@ -196,6 +196,10 @@ public class MemberController {
         // 계정 복구
         memberService.restoreMember(member);
 
+        // Redis에서 인증 정보 삭제
+        emailService.deleteRestoreData(body.email);
+
+
         return new RsData<>(
                 "201-3",
                 "계정이 복구되었습니다.",
