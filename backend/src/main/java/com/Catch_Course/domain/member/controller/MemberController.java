@@ -10,7 +10,6 @@ import com.Catch_Course.global.dto.RsData;
 import com.Catch_Course.global.exception.ServiceException;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Email;
@@ -81,27 +80,6 @@ public class MemberController {
         );
     }
 
-
-//    @Operation(summary = "회원 가입")
-//    @PostMapping("/join")
-//    public RsData<MemberDto> join(@RequestBody @Valid JoinReqBody body) {
-//
-//        memberService.findByUsername(body.username())
-//                .ifPresent(member -> {
-//                    throw new ServiceException("400-1", "중복된 아이디입니다.");
-//                });
-//
-//
-//        Member member = memberService.join(body.username(), body.password(), body.nickname(), "");
-//
-//        return new RsData<>(
-//                "201-1",
-//                "회원 가입이 완료되었습니다.",
-//                new MemberDto(member)
-//        );
-//    }
-
-
     record LoginReqBody(@NotBlank @Length(min = 3) String username,
                         @NotBlank @Length(min = 3) String password) {
     }
@@ -111,7 +89,7 @@ public class MemberController {
 
     @Operation(summary = "로그인", description = "로그인 성공 시 ApiKey와 AccessToken 반환. 쿠키로도 반환")
     @PostMapping("/login")
-    public RsData<LoginResBody> login(@RequestBody @Valid LoginReqBody body, HttpServletResponse response) {
+    public RsData<LoginResBody> login(@RequestBody @Valid LoginReqBody body) {
 
         Member member = memberService.findByUsername(body.username())
                 .orElseThrow(() -> new ServiceException("401-2", "아이디 또는 비밀번호가 일치하지 않습니다."));
@@ -157,10 +135,75 @@ public class MemberController {
         rq.removeCookie("accessToken");
         rq.removeCookie("apiKey");
 
+        // 세션 무효화
         session.invalidate();
         return new RsData<>(
                 "200-1",
                 "로그아웃이 완료되었습니다."
+        );
+    }
+
+    @Operation(summary = "회원 탈퇴")
+    @DeleteMapping("/withdraw")
+    public RsData<Void> withdraw(HttpSession session) {
+        Member member = rq.getMember(rq.getDummyMember());
+
+        memberService.withdraw(member.getId());
+
+        // 탈퇴 후 로그아웃 처리
+        rq.removeCookie("accessToken");
+        rq.removeCookie("apiKey");
+        session.invalidate();
+
+        return new RsData<>(
+                "200-1",
+                "회원탈퇴가 완료되었습니다."
+        );
+    }
+
+    @Operation(summary = "계정 복구 1단계", description = "이메일 인증 코드 발송")
+    @PostMapping("/restore-send")
+    public RsData<MemberDto> restoreSendCode(@RequestBody @Valid RestoreReqBody2 body) {
+        // 인증 코드 생성
+        String verificationCode = emailService.createVerificationCode();
+
+        // Redis에 이메일과 인증 코드 저장(임시 회원정보를 생성하는 대신)
+        emailService.saveEmailAndVerificationCode(body.email,verificationCode);
+
+        // 메일 전송
+        emailService.sendVerificationCode(body.email, verificationCode);
+
+        return new RsData<>(
+                "201-1",
+                "인증 코드가 메일로 전송되었습니다."
+        );
+
+    }
+
+    record RestoreReqBody2(@NotBlank @Email String email) {
+    }
+
+    @Operation(summary = "계정 복구 2단계", description = "인증 코드 확인 및 최종 복구")
+    @PostMapping("/restore-verify")
+    public RsData<?> verifyAndRestore(@RequestBody @Valid JoinReqBody2 body) {
+        // DB에 없는 메일
+        Member member = memberService.findByEmail(body.email)
+                .orElseThrow(() -> new ServiceException("403-2","복구 가능한 메일이 아닙니다."));
+
+        // 인증 코드 검증
+        emailService.restoreVerifyCode(body.email, body.verificationCode);
+
+        // 계정 복구
+        memberService.restoreMember(member);
+
+        // Redis에서 인증 정보 삭제
+        emailService.deleteRestoreData(body.email);
+
+
+        return new RsData<>(
+                "201-3",
+                "계정이 복구되었습니다.",
+                new MemberDto(member)
         );
     }
 }

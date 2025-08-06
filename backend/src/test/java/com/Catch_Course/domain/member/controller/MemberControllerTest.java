@@ -5,7 +5,10 @@ import com.Catch_Course.domain.member.entity.Member;
 import com.Catch_Course.domain.member.service.MemberService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.Cookie;
-import org.junit.jupiter.api.*;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -49,6 +52,7 @@ class MemberControllerTest {
 
     private String token;
     private Member loginedMember;
+    private static final String RESTORE_PREFIX = "restore ";
 
     // Redis 컨테이너 생성 및 포트 설정
     @Container
@@ -359,5 +363,169 @@ class MemberControllerTest {
                             assertThat(apiKey.getMaxAge()).isEqualTo(0);
                         }
                 );
+    }
+
+    private ResultActions withdrawRequest(String accessToken) throws Exception {
+        return mvc
+                .perform(
+                        delete("/api/members/withdraw")
+                                .header("Authorization", "Bearer " + accessToken)
+                ).andDo(print());
+    }
+
+    @Test
+    @DisplayName("계정 삭제")
+    void withdraw() throws Exception {
+        ResultActions resultActions = withdrawRequest(token);
+
+        resultActions
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value("200-1"))
+                .andExpect(jsonPath("$.msg").value("회원탈퇴가 완료되었습니다."));
+
+        // 쿠키 삭제됐는지 확인
+        resultActions
+                .andExpect(
+                        mvcResult -> {
+                            Cookie accessToken = mvcResult.getResponse().getCookie("accessToken");
+                            assertThat(accessToken).isNotNull();    // max-age 를 0으로 해서 반환, 이 단계에서 쿠키 객체는 존재함
+                            assertThat(accessToken.getMaxAge()).isEqualTo(0);
+
+                            Cookie apiKey = mvcResult.getResponse().getCookie("apiKey");
+                            assertThat(apiKey).isNotNull();
+                            assertThat(apiKey.getMaxAge()).isEqualTo(0);
+                        }
+                );
+
+        // 삭제 플래그가 참
+        Member member = memberService.findByUsernameAll("user1").get();
+        assertThat(member.isDeleteFlag()).isTrue();
+    }
+
+    private ResultActions restoreAndSendRequest(String email) throws Exception {
+        Map<String, String> requestBody = Map.of("email", email);
+
+        // Map -> Json 변환
+        ObjectMapper objectMapper = new ObjectMapper();
+        String json = objectMapper.writeValueAsString(requestBody);
+
+        return mvc
+                .perform(
+                        post("/api/members/restore-send")
+                                .content(json)
+                                .contentType(new MediaType(MediaType.APPLICATION_JSON, StandardCharsets.UTF_8))
+                ).andDo(print());
+    }
+
+    @Test
+    @DisplayName("계정 복원 1단계 - 메일 전송")
+    void restoreAndSend() throws Exception {
+        withdrawRequest(token);     // 계정 삭제
+        String email = "user1@example.com";
+        ResultActions resultActions = restoreAndSendRequest(email);
+
+        resultActions
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.code").value("201-1"))
+                .andExpect(jsonPath("$.msg").value("인증 코드가 메일로 전송되었습니다."));
+    }
+
+    private ResultActions restoreAndVerificationRequest(String email, String verificationCode) throws Exception {
+        Map<String, String> requestBody = Map.of("email", email, "verificationCode", verificationCode);
+
+        // Map -> Json 변환
+        ObjectMapper objectMapper = new ObjectMapper();
+        String json = objectMapper.writeValueAsString(requestBody);
+
+        return mvc
+                .perform(
+                        post("/api/members/restore-verify")
+                                .content(json)
+                                .contentType(new MediaType(MediaType.APPLICATION_JSON, StandardCharsets.UTF_8))
+                ).andDo(print());
+    }
+
+    @Test
+    @DisplayName("계정 복원 2단계 - 인증")
+    void restoreAndVerification() throws Exception {
+        withdrawRequest(token);     // 계정 삭제
+        String email = "user1@example.com";
+        String username = "user1";
+
+        // 메일 전송
+        restoreAndSendRequest(email);
+
+        // 인증번호
+        String verificationCode  = (String) redisTemplate.opsForValue().get(RESTORE_PREFIX + email);
+        ResultActions resultActions = restoreAndVerificationRequest(email, verificationCode);
+
+        resultActions
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.code").value("201-3"))
+                .andExpect(jsonPath("$.msg").value("계정이 복구되었습니다."));
+
+
+        // 삭제 플래그 false
+        Member member = memberService.findByUsernameAll(username).get();
+        assertThat(member.isDeleteFlag()).isFalse();
+    }
+
+    @Test
+    @DisplayName("계정 복원 2단계 실패 - 복구 가능한 메일이 아닌 경우")
+    void restoreAndVerification2() throws Exception {
+        String email = "user1@example.com";
+        Member member = memberService.findByEmail(email).get();
+        memberService.deleteMember(member);     // 하드 삭제
+
+        // 메일 전송
+        restoreAndSendRequest(email);
+
+        // 인증번호
+        String verificationCode  = (String) redisTemplate.opsForValue().get(RESTORE_PREFIX + email);
+        ResultActions resultActions = restoreAndVerificationRequest(email, verificationCode);
+
+        resultActions
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value("403-2"))
+                .andExpect(jsonPath("$.msg").value("복구 가능한 메일이 아닙니다."));
+    }
+
+    @Test
+    @DisplayName("계정 복원 2단계 실패 - 인증 코드 만료")
+    void restoreAndVerification3() throws Exception {
+        String email = "user1@example.com";
+
+        // 메일 전송
+        restoreAndSendRequest(email);
+
+        // Redis에서 삭제
+        String verificationCode  = (String) redisTemplate.opsForValue().get(RESTORE_PREFIX + email);
+        redisTemplate.delete(RESTORE_PREFIX + email);
+//        redisTemplate.opsForValue().set(RESTORE_PREFIX + email, "expired");
+        ResultActions resultActions = restoreAndVerificationRequest(email, verificationCode);
+
+        resultActions
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.code").value("401-4"))
+                .andExpect(jsonPath("$.msg").value("유효하지 않은 인증 요청입니다."));
+    }
+
+    @Test
+    @DisplayName("계정 복원 2단계 실패 - 잘못된 인증 코드")
+    void restoreAndVerification4() throws Exception {
+        String email = "user1@example.com";
+
+        // 메일 전송
+        restoreAndSendRequest(email);
+
+        // Redis에서 삭제
+        String verificationCode  = (String) redisTemplate.opsForValue().get(RESTORE_PREFIX + email);
+        redisTemplate.opsForValue().set(RESTORE_PREFIX + email, "incorrectCode");
+        ResultActions resultActions = restoreAndVerificationRequest(email, verificationCode);
+
+        resultActions
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.code").value("401-5"))
+                .andExpect(jsonPath("$.msg").value("잘못된 인증 코드입니다."));
     }
 }

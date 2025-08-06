@@ -17,7 +17,7 @@ public class CustomUserDetailService implements UserDetailsService {
     // SpringSecurity 가 User 객체를 반환
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-        Member member = memberRepository.findByUsername(username)
+        Member member = memberRepository.findByUsernameAndDeleteFlagFalse(username)
                 .orElseThrow(() -> new UsernameNotFoundException("사용자를 찾을 수 없습니다."));
 
         return new SecurityUser(member.getId(), member.getUsername(), member.getPassword(), member.getNickname(), member.getAuthorities());
