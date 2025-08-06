@@ -80,8 +80,8 @@ public class MemberService {
         return authTokenService.createAccessToken(member);
     }
 
-    public boolean existByEmail(String email) {
-        return memberRepository.existsByEmail(email);
+    public Optional<Member> findByEmail(String email) {
+        return memberRepository.findByEmail(email);
     }
 
     // 인증 전 중복 체크
@@ -90,7 +90,14 @@ public class MemberService {
             throw new ServiceException("400-1", "중복된 아이디입니다.");
         });
 
-        if (existByEmail(email)) {
+        Optional<Member> optionalMember = findByEmail(email);
+        if (optionalMember.isPresent()) {
+
+            // 계정 하드 삭제 전 가입 시도
+            if(optionalMember.get().isDeleteFlag()){
+                throw new ServiceException("400-3","계정을 백업할 수 있습니다.");
+            }
+
             throw new ServiceException("400-2", "중복된 이메일입니다.");
         }
     }
@@ -102,6 +109,11 @@ public class MemberService {
                 .orElseThrow(() -> new ServiceException("404-4","회원을 찾을 수 없습니다."));
 
         member.setDeleteFlag(true);
+        memberRepository.save(member);
+    }
+
+    public void restoreMember(Member member) {
+        member.setDeleteFlag(false);
         memberRepository.save(member);
     }
 }

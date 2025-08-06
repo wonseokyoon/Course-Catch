@@ -35,7 +35,7 @@ public class SecurityConfig {
                                 .requestMatchers(HttpMethod.GET, "/api/**")
                                 .permitAll()
                                 .requestMatchers("/api/members/login", "/api/members/join","/api/members/logout","/session"
-                                ,"/api/members/send-code","/api/members/verify-code")
+                                ,"/api/members/send-code","/api/members/verify-code","/api/members/restore-send","/api/members/restore-verify")
                                 .permitAll()
                                 .anyRequest()
                                 .authenticated()

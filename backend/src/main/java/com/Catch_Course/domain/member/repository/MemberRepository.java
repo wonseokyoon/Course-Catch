@@ -10,9 +10,6 @@ import java.util.Optional;
 public interface MemberRepository extends JpaRepository<Member, Long>{
     Optional<Member> findByUsernameAndDeleteFlagFalse(String username);
     Optional<Member> findByApiKey(String apiKey);
-
-    boolean existsByEmail(String email);
-
+    Optional<Member> findByEmail(String email);
     List<Member> findByDeleteFlagTrueAndModifiedDateBefore(LocalDateTime oneYearAgo);
-
 }

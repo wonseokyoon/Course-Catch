@@ -21,6 +21,7 @@ public class EmailService {
     private final RedisTemplate<String, Object> redisTemplate;
     private static final Duration expires = Duration.ofMinutes(5);
 
+    private static final String RESTORE_PREFIX ="restore ";
     // 인증 코드 생성
     public String createVerificationCode() {
         Random random = new Random();
@@ -77,5 +78,23 @@ public class EmailService {
     // 임시 회원 정보 삭제
     public void deleteTempMemberInfo(String email) {
         redisTemplate.delete(email);
+    }
+
+    // Redis 에 이메일과 인증 코드 저장
+    public void saveEmailAndVerificationCode(String email, String verificationCode) {
+        String key = RESTORE_PREFIX + email;
+        redisTemplate.opsForValue().set(key, verificationCode, expires);
+    }
+
+    public void restoreVerifyCode(String email, String verificationCode) {
+       String key = RESTORE_PREFIX + email;
+       String redisValue = (String) redisTemplate.opsForValue().get(key);
+
+       if(redisValue == null) {
+            throw new ServiceException("401-4", "유효하지 않은 인증 요청입니다.");
+       }
+       if (!redisValue.equals(verificationCode)) {
+           throw new ServiceException("401-5", "잘못된 인증 코드입니다.");
+       }
     }
 }

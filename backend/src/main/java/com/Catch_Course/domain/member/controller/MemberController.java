@@ -160,4 +160,46 @@ public class MemberController {
                 "회원탈퇴가 완료되었습니다."
         );
     }
+
+    @Operation(summary = "계정 복구 1단계", description = "이메일 인증 코드 발송")
+    @PostMapping("/restore-send")
+    public RsData<MemberDto> restoreSendCode(@RequestBody @Valid RestoreReqBody2 body) {
+        // 인증 코드 생성
+        String verificationCode = emailService.createVerificationCode();
+
+        // Redis에 이메일과 인증 코드 저장(임시 회원정보를 생성하는 대신)
+        emailService.saveEmailAndVerificationCode(body.email,verificationCode);
+
+        // 메일 전송
+        emailService.sendVerificationCode(body.email, verificationCode);
+
+        return new RsData<>(
+                "201-1",
+                "인증 코드가 메일로 전송되었습니다."
+        );
+
+    }
+
+    record RestoreReqBody2(@NotBlank @Email String email) {
+    }
+
+    @Operation(summary = "계정 복구 2단계", description = "인증 코드 확인 및 최종 복구")
+    @PostMapping("/restore-verify")
+    public RsData<?> verifyAndRestore(@RequestBody @Valid JoinReqBody2 body) {
+        // DB에 없는 메일
+        Member member = memberService.findByEmail(body.email)
+                .orElseThrow(() -> new ServiceException("403","복구 가능한 메일이 아닙니다."));
+
+        // 인증 코드 검증
+        emailService.restoreVerifyCode(body.email, body.verificationCode);
+
+        // 계정 복구
+        memberService.restoreMember(member);
+
+        return new RsData<>(
+                "201-3",
+                "계정이 복구되었습니다.",
+                new MemberDto(member)
+        );
+    }
 }
