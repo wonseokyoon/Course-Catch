@@ -41,6 +41,10 @@ public class MemberService {
         return memberRepository.findByUsernameAndDeleteFlagFalse(username);
     }
 
+    public Optional<Member> findByUsernameAll(String username) {
+        return memberRepository.findByUsername(username);
+    }
+
     public Optional<Member> findById(long id) {
         return memberRepository.findById(id);
     }

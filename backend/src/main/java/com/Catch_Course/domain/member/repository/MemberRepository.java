@@ -12,4 +12,5 @@ public interface MemberRepository extends JpaRepository<Member, Long>{
     Optional<Member> findByApiKey(String apiKey);
     Optional<Member> findByEmail(String email);
     List<Member> findByDeleteFlagTrueAndModifiedDateBefore(LocalDateTime oneYearAgo);
+    Optional<Member> findByUsername(String username);
 }

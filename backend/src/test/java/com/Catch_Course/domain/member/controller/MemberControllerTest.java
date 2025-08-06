@@ -360,4 +360,42 @@ class MemberControllerTest {
                         }
                 );
     }
+
+    private ResultActions withdrawRequest(String accessToken) throws Exception {
+        return mvc
+                .perform(
+                        delete("/api/members/withdraw")
+                                .header("Authorization", "Bearer " + accessToken)
+                ).andDo(print());
+    }
+
+    @Test
+    @DisplayName("계정 삭제")
+    void withdraw() throws Exception {
+        ResultActions resultActions = withdrawRequest(token);
+
+        resultActions
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value("200-1"))
+                .andExpect(jsonPath("$.msg").value("회원탈퇴가 완료되었습니다."));
+
+        // 쿠키 삭제됐는지 확인
+        resultActions
+                .andExpect(
+                        mvcResult -> {
+                            Cookie accessToken = mvcResult.getResponse().getCookie("accessToken");
+                            assertThat(accessToken).isNotNull();    // max-age 를 0으로 해서 반환, 이 단계에서 쿠키 객체는 존재함
+                            assertThat(accessToken.getMaxAge()).isEqualTo(0);
+
+                            Cookie apiKey = mvcResult.getResponse().getCookie("apiKey");
+                            assertThat(apiKey).isNotNull();
+                            assertThat(apiKey.getMaxAge()).isEqualTo(0);
+                        }
+                );
+
+        // 삭제 플래그가 참
+        Member member = memberService.findByUsernameAll("user1").get();
+        assertThat(member.isDeleteFlag()).isTrue();
+    }
+
 }
