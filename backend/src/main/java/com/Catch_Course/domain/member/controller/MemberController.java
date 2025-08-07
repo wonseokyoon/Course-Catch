@@ -216,11 +216,18 @@ public class MemberController {
 
     @Operation(summary = "프로필 수정")
     @PutMapping("/me")
-    public RsData<MemberDto> updateProfile(@RequestBody @Valid UpdateProfileReqBody body) {
+    public RsData<MemberDto> updateProfile(@RequestBody @Valid UpdateProfileReqBody body,HttpSession session) {
+        Object attribute = session.getAttribute("passwordVerified");
+        boolean isVerified = attribute != null ? (boolean) attribute : false;
+
+        if(!isVerified) {
+            throw new ServiceException("403-4","비밀번호 인증이 필요합니다.");
+        }
+
         Member dummyMember = rq.getDummyMember();
         Long memberId = dummyMember.getId();    // 동시성 고려해서 실제 객체 대신 id 전달
 
-        Member updatedMember = memberService.updateProfile(memberId, body.nickname,body.newPassword,body.email, body.profileImageUrl);
+        Member updatedMember = memberService.updateProfile(memberId, body.nickname,body.newPassword,body.email, body.profileImageUrl,session);
 
         return new RsData<>(
                 "200-1",
@@ -234,16 +241,15 @@ public class MemberController {
 
     @Operation(summary = "비밀번호 인증")
     @PostMapping("/verify-password")
-    public RsData<MemberDto> updateProfile(@RequestBody @Valid verifyPasswordReqBody body) {
+    public RsData<MemberDto> updateProfile(@RequestBody @Valid verifyPasswordReqBody body,HttpSession session) {
         Member dummyMember = rq.getDummyMember();
         Long memberId = dummyMember.getId();    // 동시성 고려해서 실제 객체 대신 id 전달
 
-        Member member = memberService.checkPassword(memberId, body.password());
+        memberService.checkPassword(memberId, body.password(), session);
 
         return new RsData<>(
                 "200-1",
-                "인증되었습니다.",
-                new MemberDto(member)
+                "인증되었습니다."
         );
     }
 
