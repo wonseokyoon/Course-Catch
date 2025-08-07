@@ -75,9 +75,9 @@ public class ProfileControllerTest {
     @DisplayName("내 정보 조회 - 만료된 토큰으로 재발급 확인")
     void me2() throws Exception {
         String expiredToken
-                = "user1 eyJhbGciOiJIUzUxMiJ9.eyJ1c2VybmFtZSI6InVzZXIxIiwiaWQiOjMsImlhdCI6MTc1Mzg1NjQ2OSwiZXhwIjoxNzUzODU2NDc0fQ.-90YTIv40Mcdx5WCL2lbGnuXErcdOnBSQAyrKx42rdjurZdJvOSm8w_JxE9IvLxjE0HKss985XmXTmoRUrUv2g";
-
-        ResultActions resultActions = meRequest(expiredToken);
+                = "expiredToken";
+        String refreshToken = memberService.getRefreshToken(loginedMember);
+        ResultActions resultActions = meRequest(expiredToken+" "+refreshToken);
 
         resultActions
                 .andExpect(status().isOk())

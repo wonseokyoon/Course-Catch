@@ -145,9 +145,9 @@ class MemberControllerTest {
                             assertThat(accessToken).isNotNull();    // max-age 를 0으로 해서 반환, 이 단계에서 쿠키 객체는 존재함
                             assertThat(accessToken.getMaxAge()).isEqualTo(0);
 
-                            Cookie apiKey = mvcResult.getResponse().getCookie("apiKey");
-                            assertThat(apiKey).isNotNull();
-                            assertThat(apiKey.getMaxAge()).isEqualTo(0);
+                            Cookie refreshToken = mvcResult.getResponse().getCookie("refreshToken");
+                            assertThat(refreshToken).isNotNull();
+                            assertThat(refreshToken.getMaxAge()).isEqualTo(0);
                         }
                 );
     }
@@ -178,9 +178,9 @@ class MemberControllerTest {
                             assertThat(accessToken).isNotNull();    // max-age 를 0으로 해서 반환, 이 단계에서 쿠키 객체는 존재함
                             assertThat(accessToken.getMaxAge()).isEqualTo(0);
 
-                            Cookie apiKey = mvcResult.getResponse().getCookie("apiKey");
-                            assertThat(apiKey).isNotNull();
-                            assertThat(apiKey.getMaxAge()).isEqualTo(0);
+                            Cookie refreshToken = mvcResult.getResponse().getCookie("refreshToken");
+                            assertThat(refreshToken).isNotNull();
+                            assertThat(refreshToken.getMaxAge()).isEqualTo(0);
                         }
                 );
 
