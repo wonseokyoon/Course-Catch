@@ -45,6 +45,13 @@ jobs:
           echo "$APPLICATION_SECRET" > src/main/resources/application-secret.yml
       - name: Run tests with Gradle
         run: ./gradlew test
+        
+      - name: Cache Gradle packages
+        uses: actions/cache@v3
+        with:
+          path: ~/.gradle/caches
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/build.gradle', '**/settings.gradle') }}
+          restore-keys: ${{ runner.os }}-gradle
 
   # 2. 릴리스 : main/develop 브랜치로 Push될 때만 실행
   makeTagAndRelease:
