@@ -117,19 +117,6 @@ public class MemberController {
         );
     }
 
-    @Operation(summary = "내 정보 조회")
-    @GetMapping("/me")
-    public RsData<MemberDto> me() {
-        Member dummyMember = rq.getDummyMember();
-        Member member = rq.getMember(dummyMember);  // 실제 객체
-
-        return new RsData<>(
-                "200-1",
-                "내 정보 조회가 완료되었습니다.",
-                new MemberDto(member)
-        );
-    }
-
     @Operation(summary = "로그아웃")
     @DeleteMapping("/logout")
     public RsData<Void> logout(HttpSession session) {
@@ -208,21 +195,5 @@ public class MemberController {
         );
     }
 
-    record UpdateProfileReqBody(@NotBlank @Length(min = 3) String nickname,
-                                String profileImageUrl) {
-    }
-
-    @Operation(summary = "닉네임, 프로필 수정")
-    @PutMapping("/me")
-    public RsData<MemberDto> updateProfile(@RequestBody @Valid UpdateProfileReqBody body) {
-        Member dummyMember = rq.getDummyMember();
-        Long memberId = dummyMember.getId();    // 동시성 고려해서 실제 객체 대신 id 전달
-
-        Member updatedMember = memberService.updateMember(memberId, body.nickname, body.profileImageUrl);
-        return new RsData<>(
-                "200-1",
-                "프로필 수정이 완료되었습니다.",
-                new MemberDto(updatedMember)
-        );
-    }
 }
+

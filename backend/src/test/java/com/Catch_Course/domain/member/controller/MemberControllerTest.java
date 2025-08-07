@@ -297,41 +297,6 @@ class MemberControllerTest {
 
     }
 
-    private ResultActions meRequest(String accessToken) throws Exception {
-        return mvc
-                .perform(
-                        get("/api/members/me")
-                                .header("Authorization", "Bearer " + accessToken)
-                ).andDo(print());
-    }
-
-    @Test
-    @DisplayName("내 정보 조회 - accessToken")
-    void me() throws Exception {
-        ResultActions resultActions = meRequest(token);
-
-        resultActions
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.code").value("200-1"))
-                .andExpect(jsonPath("$.msg").value("내 정보 조회가 완료되었습니다."));
-
-    }
-
-    @Test
-    @DisplayName("내 정보 조회 - 만료된 토큰으로 재발급 확인")
-    void me2() throws Exception {
-        String expiredToken
-                = "user1 eyJhbGciOiJIUzUxMiJ9.eyJ1c2VybmFtZSI6InVzZXIxIiwiaWQiOjMsImlhdCI6MTc1Mzg1NjQ2OSwiZXhwIjoxNzUzODU2NDc0fQ.-90YTIv40Mcdx5WCL2lbGnuXErcdOnBSQAyrKx42rdjurZdJvOSm8w_JxE9IvLxjE0HKss985XmXTmoRUrUv2g";
-
-        ResultActions resultActions = meRequest(expiredToken);
-
-        resultActions
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.code").value("200-1"))
-                .andExpect(jsonPath("$.msg").value("내 정보 조회가 완료되었습니다."));
-
-    }
-
     private ResultActions logoutRequest(String accessToken) throws Exception {
         return mvc
                 .perform(
@@ -529,35 +494,4 @@ class MemberControllerTest {
                 .andExpect(jsonPath("$.msg").value("잘못된 인증 코드입니다."));
     }
 
-    private ResultActions updateProfileRequest(String accessToken, String nickname, String profileImageUrl) throws Exception {
-        Map<String, String> requestBody = Map.of("nickname", nickname, "profileImageUrl", profileImageUrl);
-
-        // Map -> Json 변환
-        ObjectMapper objectMapper = new ObjectMapper();
-        String json = objectMapper.writeValueAsString(requestBody);
-
-        return mvc
-                .perform(
-                        put("/api/members/me")
-                                .header("Authorization", "Bearer " + accessToken)
-                                .content(json)
-                                .contentType(new MediaType(MediaType.APPLICATION_JSON, StandardCharsets.UTF_8))
-                ).andDo(print());
-    }
-
-    @Test
-    @DisplayName("프로필 수정 - 닉네임, 이메일 변경")
-    void updateProfile() throws Exception {
-        String nickname = "newNickname1";
-        String profileImageUrl = "newProfileImageUrl";
-
-        ResultActions resultActions = updateProfileRequest(token, nickname, profileImageUrl);
-
-        resultActions
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.code").value("200-1"))
-                .andExpect(jsonPath("$.msg").value("프로필 수정이 완료되었습니다."))
-                .andExpect(jsonPath("$.data.nickname").value(nickname))
-                .andExpect(jsonPath("$.data.profileImageUrl").value(profileImageUrl));
-    }
 }
