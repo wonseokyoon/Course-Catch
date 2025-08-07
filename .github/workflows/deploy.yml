@@ -48,6 +48,9 @@ jobs:
       - name: Run tests with Gradle
         run: ./gradlew test
 
+      - name: Check Docker status
+        run: docker info
+
   # 2. 릴리스 : main/develop 브랜치로 Push될 때만 실행
   makeTagAndRelease:
     name: Create Tag and Release
