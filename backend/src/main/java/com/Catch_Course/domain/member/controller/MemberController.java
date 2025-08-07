@@ -16,6 +16,7 @@ import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import lombok.RequiredArgsConstructor;
 import org.hibernate.validator.constraints.Length;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
 @Tag(name = "MemberController", description = "회원 관련 API")
@@ -27,6 +28,7 @@ public class MemberController {
     private final MemberService memberService;
     private final Rq rq;
     private final EmailService emailService;
+    private final PasswordEncoder passwordEncoder;
 
     record JoinReqBody(@NotBlank @Length(min = 3) String username,
                        @NotBlank @Length(min = 3) String password,
@@ -39,7 +41,7 @@ public class MemberController {
     @PostMapping("/send-code")
     public RsData<MemberDto> sendCode(@RequestBody @Valid JoinReqBody body) {
         // 인증 전 체크
-        memberService.checkVerification(body.username,body.email);
+        memberService.checkVerification(body.username, body.email);
 
         // 인증 코드 생성
         String verificationCode = emailService.createVerificationCode();
@@ -94,7 +96,7 @@ public class MemberController {
         Member member = memberService.findByUsername(body.username())
                 .orElseThrow(() -> new ServiceException("401-2", "아이디 또는 비밀번호가 일치하지 않습니다."));
 
-        if (!member.getPassword().equals(body.password())) {
+        if (!passwordEncoder.matches(body.password(), member.getPassword())) {
             throw new ServiceException("401-2", "아이디 또는 비밀번호가 일치하지 않습니다.");
         }
 
@@ -168,7 +170,7 @@ public class MemberController {
         String verificationCode = emailService.createVerificationCode();
 
         // Redis에 이메일과 인증 코드 저장(임시 회원정보를 생성하는 대신)
-        emailService.saveEmailAndVerificationCode(body.email,verificationCode);
+        emailService.saveEmailAndVerificationCode(body.email, verificationCode);
 
         // 메일 전송
         emailService.sendVerificationCode(body.email, verificationCode);
@@ -188,7 +190,7 @@ public class MemberController {
     public RsData<?> verifyAndRestore(@RequestBody @Valid JoinReqBody2 body) {
         // DB에 없는 메일
         Member member = memberService.findByEmail(body.email)
-                .orElseThrow(() -> new ServiceException("403-2","복구 가능한 메일이 아닙니다."));
+                .orElseThrow(() -> new ServiceException("403-2", "복구 가능한 메일이 아닙니다."));
 
         // 인증 코드 검증
         emailService.restoreVerifyCode(body.email, body.verificationCode);
@@ -207,7 +209,7 @@ public class MemberController {
     }
 
     record UpdateProfileReqBody(@NotBlank @Length(min = 3) String nickname,
-                       String profileImageUrl) {
+                                String profileImageUrl) {
     }
 
     @Operation(summary = "닉네임, 프로필 수정")
@@ -216,7 +218,7 @@ public class MemberController {
         Member dummyMember = rq.getDummyMember();
         Long memberId = dummyMember.getId();    // 동시성 고려해서 실제 객체 대신 id 전달
 
-        Member updatedMember = memberService.updateMember(memberId,body.nickname,body.profileImageUrl);
+        Member updatedMember = memberService.updateMember(memberId, body.nickname, body.profileImageUrl);
         return new RsData<>(
                 "200-1",
                 "프로필 수정이 완료되었습니다.",
