@@ -4,6 +4,7 @@ import com.Catch_Course.domain.member.entity.Member;
 import com.Catch_Course.domain.member.repository.MemberRepository;
 import com.Catch_Course.global.exception.ServiceException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -17,11 +18,13 @@ public class MemberService {
 
     private final MemberRepository memberRepository;
     private final AuthTokenService authTokenService;
-
+    private final PasswordEncoder passwordEncoder;
     public Member join(String username, String password, String nickname, String email, String profileImageUrl) {
+        String encodedPassword = passwordEncoder.encode(password);  // 패스워드 인코딩
+
         Member member = Member.builder()
                 .username(username)
-                .password(password)
+                .password(encodedPassword)
                 .apiKey(username)
                 .nickname(nickname)
                 .email(email)
@@ -116,9 +119,18 @@ public class MemberService {
         memberRepository.save(member);
     }
 
-    public void restoreMember(Member member) {
+    public Member restoreMember(Member member) {
         member.setDeleteFlag(false);
-        memberRepository.save(member);
+        return memberRepository.save(member);
+    }
+
+    public Member updateMember(Long memberId, String nickname, String profileImageUrl) {
+        Member member = memberRepository.findById(memberId)
+                .orElseThrow(() -> new ServiceException("404-4","회원을 찾을 수 없습니다."));
+
+        member.setNickname(nickname);
+        member.setProfileImageUrl(profileImageUrl);
+        return memberRepository.save(member);
     }
 
     // 테스트용 하드 삭제
