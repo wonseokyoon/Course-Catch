@@ -617,4 +617,39 @@ class MemberControllerTest {
                 .andExpect(jsonPath("$.code").value("200-1"))
                 .andExpect(jsonPath("$.msg").value("인증되었습니다."));
     }
+
+    @Test
+    @DisplayName("비밀번호 인증 실패")
+    void verifyPassword2() throws Exception {
+        String password = "incorrectPassword";
+        MockHttpSession session = new MockHttpSession();
+
+        ResultActions resultActions = verifyPasswordRequest(token, password, session);
+
+        resultActions
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value("403-3"))
+                .andExpect(jsonPath("$.msg").value("비밀번호가 올바르지 않습니다."));
+    }
+
+    @Test
+    @DisplayName("프로필 수정 실패 - 비밀번호 인증 실패")
+    void updateProfile2() throws Exception {
+        String nickname = "newNickname";
+        String password = "user11234";
+        String newPassword = "newPassword";
+        String email = "newEmail@example.com";
+        String profileImageUrl = "newProfileImageUrl";
+
+        // 1. 세션 객체 생성
+        MockHttpSession session = new MockHttpSession();
+
+        ResultActions resultActions = updateProfileRequest(token, nickname, newPassword, email, profileImageUrl, session);
+
+        resultActions
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value("403-4"))
+                .andExpect(jsonPath("$.msg").value("비밀번호 인증이 필요합니다."));
+    }
+
 }

@@ -252,7 +252,5 @@ public class MemberController {
                 "인증되었습니다."
         );
     }
-
-
 }
 
