@@ -12,7 +12,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.TimeUnit;
 
 @Service
 @Transactional
@@ -117,9 +116,7 @@ public class MemberService {
     }
 
     public String getRefreshToken(Member member) {
-        String refreshToken = authTokenService.createRefreshToken(member);
-        redisTemplate.opsForValue().set(REFRESH_PREFIX + member.getUsername(), refreshToken,refreshExpireSeconds, TimeUnit.SECONDS);
-        return refreshToken;
+        return authTokenService.createRefreshToken(member);
     }
 
     public Optional<Member> findByEmail(String email) {
