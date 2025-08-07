@@ -218,10 +218,35 @@ public class MemberController {
         Member dummyMember = rq.getDummyMember();
         Long memberId = dummyMember.getId();    // 동시성 고려해서 실제 객체 대신 id 전달
 
-        Member updatedMember = memberService.updateMember(memberId, body.nickname, body.profileImageUrl);
+        Member updatedMember = memberService.updateProfile(memberId, body.nickname, body.profileImageUrl);
         return new RsData<>(
                 "200-1",
                 "프로필 수정이 완료되었습니다.",
+                new MemberDto(updatedMember)
+        );
+    }
+
+    record UpdatePasswordAndEmailReqBody(@NotBlank @Length(min = 3) String password,
+                                         @NotBlank @Length(min = 3) String newPassword,
+                                         @NotBlank @Email String email) {
+    }
+
+    @Operation(summary = "비밀번호 변경")
+    @PutMapping("/password")
+    public RsData<MemberDto> updatePasswordAndEmail(@RequestBody @Valid UpdatePasswordAndEmailReqBody body, HttpSession session) {
+        Member dummyMember = rq.getDummyMember();
+        Long memberId = dummyMember.getId();    // 동시성 고려해서 실제 객체 대신 id 전달
+
+        Member updatedMember = memberService.updatePasswordAndEmail(memberId, body.password, body.email, body.newPassword);
+
+        // 로그아웃 처리
+        rq.removeCookie("accessToken");
+        rq.removeCookie("apiKey");
+        session.invalidate();
+
+        return new RsData<>(
+                "200-1",
+                "프로필 수정이 완료되었습니다. 다시 로그인 해주세요.",
                 new MemberDto(updatedMember)
         );
     }

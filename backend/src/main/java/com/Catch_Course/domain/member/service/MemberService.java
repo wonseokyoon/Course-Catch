@@ -124,7 +124,7 @@ public class MemberService {
         return memberRepository.save(member);
     }
 
-    public Member updateMember(Long memberId, String nickname, String profileImageUrl) {
+    public Member updateProfile(Long memberId, String nickname, String profileImageUrl) {
         Member member = memberRepository.findById(memberId)
                 .orElseThrow(() -> new ServiceException("404-4","회원을 찾을 수 없습니다."));
 
@@ -136,5 +136,19 @@ public class MemberService {
     // 테스트용 하드 삭제
     public void deleteMember(Member member) {
         memberRepository.delete(member);
+    }
+
+    public Member updatePasswordAndEmail(Long memberId, String password, String email, String newPassword) {
+        Member member = memberRepository.findById(memberId)
+                .orElseThrow(() -> new ServiceException("404-4","회원을 찾을 수 없습니다."));
+
+        // 비밀번호 검증
+        if(!passwordEncoder.matches(password, member.getPassword())){
+            throw new ServiceException("403-3","비밀번호가 올바르지 않습니다.");
+        }
+
+        member.setPassword(passwordEncoder.encode(newPassword));
+        member.setEmail(email);
+        return memberRepository.save(member);
     }
 }
