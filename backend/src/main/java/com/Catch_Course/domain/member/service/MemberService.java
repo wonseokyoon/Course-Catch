@@ -4,6 +4,7 @@ import com.Catch_Course.domain.member.entity.Member;
 import com.Catch_Course.domain.member.repository.MemberRepository;
 import com.Catch_Course.global.exception.ServiceException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -11,6 +12,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 
 @Service
 @Transactional
@@ -21,6 +23,9 @@ public class MemberService {
     private final AuthTokenService authTokenService;
     private final PasswordEncoder passwordEncoder;
     private final RedisTemplate<String,Object> redisTemplate;
+
+    @Value("${custom.jwt.refresh-expire-seconds}")
+    private int refreshExpireSeconds;
 
     private static final String REFRESH_PREFIX = "refresh: ";
 
@@ -113,7 +118,7 @@ public class MemberService {
 
     public String getRefreshToken(Member member) {
         String refreshToken = authTokenService.createRefreshToken(member);
-        redisTemplate.opsForValue().set(REFRESH_PREFIX + member.getUsername(), refreshToken);
+        redisTemplate.opsForValue().set(REFRESH_PREFIX + member.getUsername(), refreshToken,refreshExpireSeconds, TimeUnit.SECONDS);
         return refreshToken;
     }
 
