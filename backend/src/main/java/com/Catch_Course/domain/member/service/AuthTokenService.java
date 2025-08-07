@@ -18,10 +18,18 @@ public class AuthTokenService {
     @Value("${custom.jwt.expire-seconds}")
     private int expireSeconds;
 
+    @Value("${custom.jwt.refresh-expire-seconds}")
+    private int refreshExpireSeconds;
+
     // Member의 AccessToken 가져오기
     String createAccessToken(Member member) {
         Map<String, Object> claims = Map.of("id", member.getId(), "username", member.getUsername());
         return Ut.Jwt.createAccessToken(secretKey, expireSeconds, claims);
+    }
+
+    String createRefreshToken(Member member) {
+        Map<String, Object> claims = Map.of("id", member.getId(), "username", member.getUsername());
+        return Ut.Jwt.createRefreshToken(secretKey, refreshExpireSeconds, claims);
     }
 
     Map<String, Object> getPayload(String token) {

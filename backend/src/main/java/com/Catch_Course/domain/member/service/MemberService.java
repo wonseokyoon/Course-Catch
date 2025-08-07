@@ -4,6 +4,7 @@ import com.Catch_Course.domain.member.entity.Member;
 import com.Catch_Course.domain.member.repository.MemberRepository;
 import com.Catch_Course.global.exception.ServiceException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -19,6 +20,9 @@ public class MemberService {
     private final MemberRepository memberRepository;
     private final AuthTokenService authTokenService;
     private final PasswordEncoder passwordEncoder;
+    private final RedisTemplate<String,Object> redisTemplate;
+
+    private static final String REFRESH_PREFIX = "refresh: ";
 
     public Member join(String username, String password, String nickname, String email, String profileImageUrl) {
         String encodedPassword = passwordEncoder.encode(password);  // 패스워드 인코딩
@@ -26,7 +30,6 @@ public class MemberService {
         Member member = Member.builder()
                 .username(username)
                 .password(encodedPassword)
-                .apiKey(username)
                 .nickname(nickname)
                 .email(email)
                 .profileImageUrl(profileImageUrl)
@@ -53,17 +56,13 @@ public class MemberService {
         return memberRepository.findById(id);
     }
 
-    public Optional<Member> findByApiKey(String apiKey) {
-        return memberRepository.findByApiKey(apiKey);
-    }
-
-    // apiKey + accessToken
+    // accessToken + refreshToken
     public String getAuthToken(Member member) {
 
         String accessToken = authTokenService.createAccessToken(member);
-        String apiKey = member.getApiKey();
+        String refreshToken = authTokenService.createRefreshToken(member);
 
-        return apiKey + " " + accessToken;  // apiKey 와 accessToken 같이 반환
+        return accessToken + " " + refreshToken;  // accessToken , refreshToken
     }
 
     public Optional<Member> findMemberByAccessToken(String accessToken) {
@@ -84,8 +83,38 @@ public class MemberService {
         );
     }
 
+    public Optional<Member> findMemberByRefreshToken(String refreshToken) {
+        // 1. payload 가져옴
+        Map<String, Object> payload = authTokenService.getPayload(refreshToken);
+
+        if (payload == null) return Optional.empty();
+
+        // 2. payload 에서 id를 꺼냄
+        Long id = (Long) payload.get("id");
+        String username = (String) payload.get("username");
+
+        String storedRefreshToken = (String) redisTemplate.opsForValue().get(REFRESH_PREFIX + username);
+
+        if(!refreshToken.equals(storedRefreshToken)) {
+            return Optional.empty();
+        }
+
+        return Optional.of(
+                Member.builder()
+                        .id(id)
+                        .username(username)
+                        .build()
+        );
+    }
+
     public String getAccessToken(Member member) {
         return authTokenService.createAccessToken(member);
+    }
+
+    public String getRefreshToken(Member member) {
+        String refreshToken = authTokenService.createRefreshToken(member);
+        redisTemplate.opsForValue().set(REFRESH_PREFIX + member.getUsername(), refreshToken);
+        return refreshToken;
     }
 
     public Optional<Member> findByEmail(String email) {

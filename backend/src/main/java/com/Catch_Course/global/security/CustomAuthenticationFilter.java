@@ -8,6 +8,8 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
@@ -20,6 +22,12 @@ import java.util.Optional;
 public class CustomAuthenticationFilter extends OncePerRequestFilter {
     private final Rq rq;
     private final MemberService memberService;
+    private final RedisTemplate<String, Object> redisTemplate;
+
+    private static final String REFRESH_PREFIX = "refresh: ";
+
+    @Value("${custom.jwt.secret-key}")
+    private String secretKey;
 
     private boolean isAuthorizationHeader(String header) {
 
@@ -30,10 +38,10 @@ public class CustomAuthenticationFilter extends OncePerRequestFilter {
         return header.startsWith("Bearer ");
     }
 
-    record AuthToken(String apiKey, String accessToken) {
+    record AuthToken(String accessToken, String refreshToken) {
     }
 
-    // 요청으로부터 authToken(apiKey,accessToken) 꺼냄
+    // 요청으로부터 authToken(accessToken,refreshToken) 꺼냄
     private AuthToken getAuthTokenFromRequest() {
         String header = rq.getHeader("Authorization");
 
@@ -51,17 +59,17 @@ public class CustomAuthenticationFilter extends OncePerRequestFilter {
 
         // 쿠키로 체크
         String accessToken = rq.getValueFromCookie("accessToken");
-        String apiKey = rq.getValueFromCookie("apiKey");
+        String refreshToken = rq.getValueFromCookie("refreshToken");
 
-        if (accessToken == null && apiKey == null) {
+        if (accessToken == null && refreshToken == null) {
             return null;
         }
 
-        return new AuthToken(apiKey, accessToken);
+        return new AuthToken(accessToken, refreshToken);
     }
 
     // accessToken 재발급
-    public Member refreshAccessToken(String accessToken, String apiKey) {
+    public Member refreshAccessToken(String accessToken, String refreshToken) {
         Optional<Member> optionalMember = memberService.findMemberByAccessToken(accessToken);
 
         // accessToken 에 해당되는 유저가 존재하면
@@ -69,8 +77,8 @@ public class CustomAuthenticationFilter extends OncePerRequestFilter {
             return optionalMember.get();
         }
 
-        // apiKey 값으로 재발급 체크
-        Optional<Member> reissueMember = memberService.findByApiKey(apiKey);
+        // refresh 토큰 값으로 재발급 체크
+        Optional<Member> reissueMember = memberService.findMemberByRefreshToken(refreshToken);
 
         // 그마저도 없으면 넘김
         if (reissueMember.isEmpty()) {
@@ -82,7 +90,7 @@ public class CustomAuthenticationFilter extends OncePerRequestFilter {
 
         // 쿠키에 추가
         rq.addCookie("accessToken", newAccessToken);
-        rq.addCookie("apiKey", apiKey);
+        rq.addCookie("refreshToken", refreshToken);
 
         return reissueMember.get();
     }
@@ -106,10 +114,10 @@ public class CustomAuthenticationFilter extends OncePerRequestFilter {
             return;
         }
 
-        String apiKey = tokens.apiKey;
         String accessToken = tokens.accessToken;
+        String refreshToken = tokens.refreshToken;
 
-        Member member = refreshAccessToken(accessToken, apiKey);
+        Member member = refreshAccessToken(accessToken, refreshToken);
 
         if (member == null) {
             filterChain.doFilter(request, response);
