@@ -107,10 +107,7 @@ public class ProfileControllerTest {
     void me2() throws Exception {
         String expiredToken
                 = "expiredToken";
-//        String storedRefreshToken = (String) redisTemplate.opsForValue().get(REFRESH_PREFIX + "user1");
-//        System.out.println("1"+storedRefreshToken);
         String refreshToken = token.split(" ")[1];
-//        System.out.println("2"+refreshToken);
         ResultActions resultActions = meRequest(expiredToken + " " + refreshToken);
         resultActions
                 .andExpect(status().isOk())
@@ -138,6 +135,7 @@ public class ProfileControllerTest {
     @DisplayName("내 정보 조회 - 이전 리프레시 토큰 사용(토큰이 유효해도 레디스에 저장된 토큰만 사용 가능)")
     void me3() throws Exception {
         String prevToken = "expiredToken" + " " + token.split(" ")[1];
+        Thread.sleep(1000);
         loginRequest("user1", "user11234"); // 재로그인
 
         ResultActions resultActions = meRequest(prevToken);
