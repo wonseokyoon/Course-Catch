@@ -19,6 +19,7 @@ public class MemberService {
     private final MemberRepository memberRepository;
     private final AuthTokenService authTokenService;
     private final PasswordEncoder passwordEncoder;
+
     public Member join(String username, String password, String nickname, String email, String profileImageUrl) {
         String encodedPassword = passwordEncoder.encode(password);  // 패스워드 인코딩
 
@@ -101,8 +102,8 @@ public class MemberService {
         if (optionalMember.isPresent()) {
 
             // 계정 하드 삭제 전 가입 시도
-            if(optionalMember.get().isDeleteFlag()){
-                throw new ServiceException("400-3","계정을 백업할 수 있습니다.");
+            if (optionalMember.get().isDeleteFlag()) {
+                throw new ServiceException("400-3", "계정을 백업할 수 있습니다.");
             }
 
             throw new ServiceException("400-2", "중복된 이메일입니다.");
@@ -113,7 +114,7 @@ public class MemberService {
         // 동시성 문제를 위해 id를 전달하여 DB 호출
         // todo: 이후 수강한 강의를 취소하는것까지 구현
         Member member = memberRepository.findById(memberId)
-                .orElseThrow(() -> new ServiceException("404-4","회원을 찾을 수 없습니다."));
+                .orElseThrow(() -> new ServiceException("404-4", "회원을 찾을 수 없습니다."));
 
         member.setDeleteFlag(true);
         memberRepository.save(member);
@@ -124,11 +125,13 @@ public class MemberService {
         return memberRepository.save(member);
     }
 
-    public Member updateProfile(Long memberId, String nickname, String profileImageUrl) {
+    public Member updateProfile(Long memberId, String nickname, String newPassword, String email, String profileImageUrl) {
         Member member = memberRepository.findById(memberId)
-                .orElseThrow(() -> new ServiceException("404-4","회원을 찾을 수 없습니다."));
+                .orElseThrow(() -> new ServiceException("404-4", "회원을 찾을 수 없습니다."));
 
         member.setNickname(nickname);
+        member.setPassword(passwordEncoder.encode(newPassword));
+        member.setEmail(email);
         member.setProfileImageUrl(profileImageUrl);
         return memberRepository.save(member);
     }
@@ -138,17 +141,14 @@ public class MemberService {
         memberRepository.delete(member);
     }
 
-    public Member updatePasswordAndEmail(Long memberId, String password, String email, String newPassword) {
+    public Member checkPassword(Long memberId, String password) {
         Member member = memberRepository.findById(memberId)
-                .orElseThrow(() -> new ServiceException("404-4","회원을 찾을 수 없습니다."));
+                .orElseThrow(() -> new ServiceException("404-4", "회원을 찾을 수 없습니다."));
 
-        // 비밀번호 검증
-        if(!passwordEncoder.matches(password, member.getPassword())){
-            throw new ServiceException("403-3","비밀번호가 올바르지 않습니다.");
+        if (!passwordEncoder.matches(password, member.getPassword())) {
+            throw new ServiceException("403-3", "비밀번호가 올바르지 않습니다.");
         }
 
-        member.setPassword(passwordEncoder.encode(newPassword));
-        member.setEmail(email);
-        return memberRepository.save(member);
+        return member;
     }
 }

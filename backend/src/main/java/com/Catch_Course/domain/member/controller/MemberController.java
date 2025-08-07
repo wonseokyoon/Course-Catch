@@ -208,41 +208,19 @@ public class MemberController {
         );
     }
 
-    record UpdateProfileReqBody(@NotBlank @Length(min = 3) String nickname,
+    record UpdateProfileReqBody(String nickname,
+                                String newPassword,
+                                @Email String email,
                                 String profileImageUrl) {
     }
 
-    @Operation(summary = "닉네임, 프로필 수정")
+    @Operation(summary = "프로필 수정")
     @PutMapping("/me")
     public RsData<MemberDto> updateProfile(@RequestBody @Valid UpdateProfileReqBody body) {
         Member dummyMember = rq.getDummyMember();
         Long memberId = dummyMember.getId();    // 동시성 고려해서 실제 객체 대신 id 전달
 
-        Member updatedMember = memberService.updateProfile(memberId, body.nickname, body.profileImageUrl);
-        return new RsData<>(
-                "200-1",
-                "프로필 수정이 완료되었습니다.",
-                new MemberDto(updatedMember)
-        );
-    }
-
-    record UpdatePasswordAndEmailReqBody(@NotBlank @Length(min = 3) String password,
-                                         @NotBlank @Length(min = 3) String newPassword,
-                                         @NotBlank @Email String email) {
-    }
-
-    @Operation(summary = "비밀번호 변경")
-    @PutMapping("/password")
-    public RsData<MemberDto> updatePasswordAndEmail(@RequestBody @Valid UpdatePasswordAndEmailReqBody body, HttpSession session) {
-        Member dummyMember = rq.getDummyMember();
-        Long memberId = dummyMember.getId();    // 동시성 고려해서 실제 객체 대신 id 전달
-
-        Member updatedMember = memberService.updatePasswordAndEmail(memberId, body.password, body.email, body.newPassword);
-
-        // 로그아웃 처리
-        rq.removeCookie("accessToken");
-        rq.removeCookie("apiKey");
-        session.invalidate();
+        Member updatedMember = memberService.updateProfile(memberId, body.nickname,body.newPassword,body.email, body.profileImageUrl);
 
         return new RsData<>(
                 "200-1",
@@ -250,4 +228,25 @@ public class MemberController {
                 new MemberDto(updatedMember)
         );
     }
+
+    record verifyPasswordReqBody(@NotBlank @Length(min = 3) String password) {
+    }
+
+    @Operation(summary = "비밀번호 인증")
+    @PostMapping("/verify-password")
+    public RsData<MemberDto> updateProfile(@RequestBody @Valid verifyPasswordReqBody body) {
+        Member dummyMember = rq.getDummyMember();
+        Long memberId = dummyMember.getId();    // 동시성 고려해서 실제 객체 대신 id 전달
+
+        Member member = memberService.checkPassword(memberId, body.password());
+
+        return new RsData<>(
+                "200-1",
+                "인증되었습니다.",
+                new MemberDto(member)
+        );
+    }
+
+
 }
+
