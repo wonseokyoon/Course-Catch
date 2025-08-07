@@ -14,6 +14,8 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.MediaType;
+import org.springframework.mock.web.MockHttpSession;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
@@ -49,6 +51,9 @@ class MemberControllerTest {
 
     @Autowired
     private RedisTemplate<String, Object> redisTemplate;
+
+    @Autowired
+    private PasswordEncoder passwordEncoder;
 
     private String token;
     private Member loginedMember;
@@ -529,8 +534,13 @@ class MemberControllerTest {
                 .andExpect(jsonPath("$.msg").value("잘못된 인증 코드입니다."));
     }
 
-    private ResultActions updateProfileRequest(String accessToken, String nickname, String profileImageUrl) throws Exception {
-        Map<String, String> requestBody = Map.of("nickname", nickname, "profileImageUrl", profileImageUrl);
+    private ResultActions updateProfileRequest(String accessToken, String nickname, String newPassword, String email, String profileImageUrl, MockHttpSession session) throws Exception {
+        Map<String, String> requestBody = Map.of(
+                "nickname", nickname,
+                "newPassword", newPassword,
+                "email", email,
+                "profileImageUrl", profileImageUrl
+        );
 
         // Map -> Json 변환
         ObjectMapper objectMapper = new ObjectMapper();
@@ -542,22 +552,69 @@ class MemberControllerTest {
                                 .header("Authorization", "Bearer " + accessToken)
                                 .content(json)
                                 .contentType(new MediaType(MediaType.APPLICATION_JSON, StandardCharsets.UTF_8))
+                                .session(session)   // 비밀번호 인증과 같은 세션 공유
                 ).andDo(print());
     }
 
     @Test
-    @DisplayName("프로필 수정 - 닉네임, 이메일 변경")
+    @DisplayName("프로필 수정")
     void updateProfile() throws Exception {
-        String nickname = "newNickname1";
+        String nickname = "newNickname";
+        String password = "user11234";
+        String newPassword = "newPassword";
+        String email = "newEmail@example.com";
         String profileImageUrl = "newProfileImageUrl";
 
-        ResultActions resultActions = updateProfileRequest(token, nickname, profileImageUrl);
+        // 1. 세션 객체 생성
+        MockHttpSession session = new MockHttpSession();
+
+        // 비밀번호 인증
+        verifyPasswordRequest(token, password, session)
+                .andExpect(status().isOk());
+
+        ResultActions resultActions = updateProfileRequest(token, nickname, newPassword, email, profileImageUrl, session);
 
         resultActions
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value("200-1"))
-                .andExpect(jsonPath("$.msg").value("프로필 수정이 완료되었습니다."))
+                .andExpect(jsonPath("$.msg").value("프로필 수정이 완료되었습니다. 다시 로그인 해주세요."))
                 .andExpect(jsonPath("$.data.nickname").value(nickname))
+                .andExpect(jsonPath("$.data.email").value(email))
                 .andExpect(jsonPath("$.data.profileImageUrl").value(profileImageUrl));
+
+        // DB 조회해서 비밀번호 비교
+        Member member = memberService.findByEmail(email).get();
+        passwordEncoder.matches(newPassword, member.getPassword());
+    }
+
+    private ResultActions verifyPasswordRequest(String accessToken, String password, MockHttpSession session) throws Exception {
+        Map<String, String> requestBody = Map.of("password", password);
+
+        // Map -> Json 변환
+        ObjectMapper objectMapper = new ObjectMapper();
+        String json = objectMapper.writeValueAsString(requestBody);
+
+        return mvc
+                .perform(
+                        post("/api/members/verify-password")
+                                .header("Authorization", "Bearer " + accessToken)
+                                .content(json)
+                                .contentType(new MediaType(MediaType.APPLICATION_JSON, StandardCharsets.UTF_8))
+                                .session(session)   // 세션 객체 추가
+                ).andDo(print());
+    }
+
+    @Test
+    @DisplayName("비밀번호 인증")
+    void verifyPassword() throws Exception {
+        String password = "user11234";
+        MockHttpSession session = new MockHttpSession();
+
+        ResultActions resultActions = verifyPasswordRequest(token, password, session);
+
+        resultActions
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value("200-1"))
+                .andExpect(jsonPath("$.msg").value("인증되었습니다."));
     }
 }
