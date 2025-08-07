@@ -21,6 +21,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.transaction.annotation.Transactional;
 import org.testcontainers.containers.GenericContainer;
+import org.testcontainers.containers.wait.strategy.WaitAllStrategy;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
@@ -59,7 +60,8 @@ public class ProfileControllerTest {
     @Container
     private static final GenericContainer<?> REDIS_CONTAINER =
             new GenericContainer<>("redis:6-alpine")
-                    .withExposedPorts(6379);
+                    .withExposedPorts(6379)
+                    .waitingFor(new WaitAllStrategy());
 
     // RedisTemplate이 컨테이너의 동적 포트를 사용하도록 설정
     @DynamicPropertySource
