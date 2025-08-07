@@ -117,19 +117,6 @@ public class MemberController {
         );
     }
 
-    @Operation(summary = "내 정보 조회")
-    @GetMapping("/me")
-    public RsData<MemberDto> me() {
-        Member dummyMember = rq.getDummyMember();
-        Member member = rq.getMember(dummyMember);  // 실제 객체
-
-        return new RsData<>(
-                "200-1",
-                "내 정보 조회가 완료되었습니다.",
-                new MemberDto(member)
-        );
-    }
-
     @Operation(summary = "로그아웃")
     @DeleteMapping("/logout")
     public RsData<Void> logout(HttpSession session) {
@@ -208,49 +195,5 @@ public class MemberController {
         );
     }
 
-    record UpdateProfileReqBody(String nickname,
-                                String newPassword,
-                                @Email String email,
-                                String profileImageUrl) {
-    }
-
-    @Operation(summary = "프로필 수정")
-    @PutMapping("/me")
-    public RsData<MemberDto> updateProfile(@RequestBody @Valid UpdateProfileReqBody body,HttpSession session) {
-        Object attribute = session.getAttribute("passwordVerified");
-        boolean isVerified = attribute != null ? (boolean) attribute : false;
-
-        if(!isVerified) {
-            throw new ServiceException("403-4","비밀번호 인증이 필요합니다.");
-        }
-
-        Member dummyMember = rq.getDummyMember();
-        Long memberId = dummyMember.getId();    // 동시성 고려해서 실제 객체 대신 id 전달
-
-        Member updatedMember = memberService.updateProfile(memberId, body.nickname,body.newPassword,body.email, body.profileImageUrl,session);
-
-        return new RsData<>(
-                "200-1",
-                "프로필 수정이 완료되었습니다. 다시 로그인 해주세요.",
-                new MemberDto(updatedMember)
-        );
-    }
-
-    record verifyPasswordReqBody(@NotBlank @Length(min = 3) String password) {
-    }
-
-    @Operation(summary = "비밀번호 인증")
-    @PostMapping("/verify-password")
-    public RsData<MemberDto> updateProfile(@RequestBody @Valid verifyPasswordReqBody body,HttpSession session) {
-        Member dummyMember = rq.getDummyMember();
-        Long memberId = dummyMember.getId();    // 동시성 고려해서 실제 객체 대신 id 전달
-
-        memberService.checkPassword(memberId, body.password(), session);
-
-        return new RsData<>(
-                "200-1",
-                "인증되었습니다."
-        );
-    }
 }
 
