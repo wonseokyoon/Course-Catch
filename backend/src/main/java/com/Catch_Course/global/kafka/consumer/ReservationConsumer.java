@@ -1,6 +1,7 @@
-package com.Catch_Course.domain.reservation.dto;
+package com.Catch_Course.global.kafka.consumer;
 
 import com.Catch_Course.domain.reservation.service.ReservationService;
+import com.Catch_Course.global.kafka.dto.ReservationRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.annotation.KafkaListener;

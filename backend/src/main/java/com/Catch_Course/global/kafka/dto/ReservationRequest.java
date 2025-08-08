@@ -1,4 +1,4 @@
-package com.Catch_Course.domain.reservation.dto;
+package com.Catch_Course.global.kafka.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
