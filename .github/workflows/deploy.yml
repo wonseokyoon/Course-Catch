@@ -56,7 +56,7 @@ jobs:
           echo "$APPLICATION_SECRET" > src/main/resources/application-secret.yml
 
       - name: Run tests with Gradle
-        run: ./gradlew test -Dspring.data.redis.host=redis
+        run: ./gradlew -Dspring.data.redis.host=redis test
       - name: Check Docker status
         run: docker info
 
