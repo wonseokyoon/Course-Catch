@@ -38,6 +38,20 @@ public class Ut {
                     .compact();
         }
 
+        public static String createRefreshToken(String secretKey, int expireSeconds, Map<String, Object> claims) {
+            SecretKey key = Keys.hmacShaKeyFor(secretKey.getBytes());
+
+            Date issuedAt = new Date();
+            Date expiration = new Date(issuedAt.getTime() + 1000L * expireSeconds);
+
+            return Jwts.builder()
+                    .claims(claims)
+                    .issuedAt(issuedAt)
+                    .expiration(expiration)
+                    .signWith(key)
+                    .compact();
+        }
+
         // 토큰이 유효한지 검증
         public static boolean isValidToken(String secretKey, String token) {
             SecretKey key = Keys.hmacShaKeyFor(secretKey.getBytes());

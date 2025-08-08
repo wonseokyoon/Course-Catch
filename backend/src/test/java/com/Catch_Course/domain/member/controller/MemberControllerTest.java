@@ -1,11 +1,13 @@
 package com.Catch_Course.domain.member.controller;
 
-import com.Catch_Course.domain.email.dto.TempMemberInfo;
 import com.Catch_Course.domain.member.entity.Member;
 import com.Catch_Course.domain.member.service.MemberService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.Cookie;
-import org.junit.jupiter.api.*;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -18,6 +20,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.transaction.annotation.Transactional;
 import org.testcontainers.containers.GenericContainer;
+import org.testcontainers.containers.wait.strategy.WaitAllStrategy;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
@@ -25,7 +28,8 @@ import java.nio.charset.StandardCharsets;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -50,11 +54,14 @@ class MemberControllerTest {
     private String token;
     private Member loginedMember;
 
+    private static final String REFRESH_PREFIX = "refresh: ";
+
     // Redis 컨테이너 생성 및 포트 설정
     @Container
     private static final GenericContainer<?> REDIS_CONTAINER =
             new GenericContainer<>("redis:6-alpine")
-                    .withExposedPorts(6379);
+                    .withExposedPorts(6379)
+                    .waitingFor(new WaitAllStrategy());
 
     // RedisTemplate이 컨테이너의 동적 포트를 사용하도록 설정
     @DynamicPropertySource
@@ -75,79 +82,6 @@ class MemberControllerTest {
     void tearDown() {
         // 각 테스트가 끝난 후 Redis 데이터를 초기화
         redisTemplate.getConnectionFactory().getConnection().flushAll();
-    }
-
-    private ResultActions sendCodeRequest(String username, String password, String nickname, String email, String profileImageUrl) throws Exception {
-        Map<String, String> requestBody = Map.of("username", username, "password", password, "nickname", nickname, "email", email, "profileImageUrl", profileImageUrl);
-
-        // Map -> Json 변환
-        ObjectMapper objectMapper = new ObjectMapper();
-        String json = objectMapper.writeValueAsString(requestBody);
-
-        return mvc
-                .perform(
-                        post("/api/members/send-code")
-                                .content(json)
-                                .contentType(new MediaType(MediaType.APPLICATION_JSON, StandardCharsets.UTF_8))
-                ).andDo(print());
-    }
-
-    private ResultActions verifyAndJoinRequest(String email, String verificationCode) throws Exception {
-        Map<String, String> requestBody = Map.of("email", email, "verificationCode", verificationCode);
-
-        // Map -> Json 변환
-        ObjectMapper objectMapper = new ObjectMapper();
-        String json = objectMapper.writeValueAsString(requestBody);
-
-        return mvc
-                .perform(
-                        post("/api/members/verify-code")
-                                .content(json)
-                                .contentType(new MediaType(MediaType.APPLICATION_JSON, StandardCharsets.UTF_8))
-                ).andDo(print());
-    }
-
-    @Test
-    @DisplayName("회원 가입 1단계 - 인증 번호 발송")
-    void join() throws Exception {
-        String username = "newUser1";
-        String password = "password";
-        String nickname = "newNickname1";
-        String email = "newEmail1@example.com";
-        String profileImageUrl = "newProfileImageUrl";
-
-        ResultActions resultActions = sendCodeRequest(username, password, nickname, email, profileImageUrl);
-
-        resultActions
-                .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.code").value("201-1"))
-                .andExpect(jsonPath("$.msg").value("인증 코드가 메일로 전송되었습니다."));
-    }
-
-    @Test
-    @DisplayName("회원 가입 2단계 - 인증 번호 검증과 회원 정보 생성")
-    void join2() throws Exception {
-        String username = "newUser1";
-        String password = "password";
-        String nickname = "newNickname1";
-        String email = "newEmail1@example.com";
-        String profileImageUrl = "newProfileImageUrl";
-
-        // 회원가입 1단계
-        sendCodeRequest(username, password, nickname, email, profileImageUrl);
-
-        // 인증번호를 가져오는 로직
-        Object object = redisTemplate.opsForValue().get(email);
-        TempMemberInfo info = (TempMemberInfo) object;
-
-        ResultActions resultActions = verifyAndJoinRequest(email, info.getVerificationCode());
-        Member member = memberService.findByUsername(username).get();
-        assertThat(member.getNickname()).isEqualTo(nickname);
-
-        resultActions
-                .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.code").value("201-2"))
-                .andExpect(jsonPath("$.msg").value("인증이 완료되었습니다. 회원가입을 축하합니다."));
     }
 
     private ResultActions loginRequest(String username, String password) throws Exception {
@@ -182,43 +116,8 @@ class MemberControllerTest {
                 .andExpect(jsonPath("$.data.memberDto.nickname").value(member.getNickname()))    // 닉네임 검증
                 .andExpect(jsonPath("$.data.memberDto.profileImageUrl").isNotEmpty())    // profileImageUrl notnull 체크
                 .andExpect(jsonPath("$.data.memberDto.profileImageUrl").value(member.getProfileImageUrl()))    // 검증
-                .andExpect(jsonPath("$.data.apiKey").value(member.getApiKey()))    // apiKey 검증
+                .andExpect(jsonPath("$.data.refreshToken").value(redisTemplate.opsForValue().get(REFRESH_PREFIX+username)))    // refreshToken 검증
                 .andExpect(jsonPath("$.data.accessToken").exists());    // accessToken 나오는지
-
-    }
-
-    private ResultActions meRequest(String accessToken) throws Exception {
-        return mvc
-                .perform(
-                        get("/api/members/me")
-                                .header("Authorization", "Bearer " + accessToken)
-                ).andDo(print());
-    }
-
-    @Test
-    @DisplayName("내 정보 조회 - accessToken")
-    void me() throws Exception {
-        ResultActions resultActions = meRequest(token);
-
-        resultActions
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.code").value("200-1"))
-                .andExpect(jsonPath("$.msg").value("내 정보 조회가 완료되었습니다."));
-
-    }
-
-    @Test
-    @DisplayName("내 정보 조회 - 만료된 토큰으로 재발급 확인")
-    void me2() throws Exception {
-        String expiredToken
-                = "user1 eyJhbGciOiJIUzUxMiJ9.eyJ1c2VybmFtZSI6InVzZXIxIiwiaWQiOjMsImlhdCI6MTc1Mzg1NjQ2OSwiZXhwIjoxNzUzODU2NDc0fQ.-90YTIv40Mcdx5WCL2lbGnuXErcdOnBSQAyrKx42rdjurZdJvOSm8w_JxE9IvLxjE0HKss985XmXTmoRUrUv2g";
-
-        ResultActions resultActions = meRequest(expiredToken);
-
-        resultActions
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.code").value("200-1"))
-                .andExpect(jsonPath("$.msg").value("내 정보 조회가 완료되었습니다."));
 
     }
 
@@ -248,10 +147,48 @@ class MemberControllerTest {
                             assertThat(accessToken).isNotNull();    // max-age 를 0으로 해서 반환, 이 단계에서 쿠키 객체는 존재함
                             assertThat(accessToken.getMaxAge()).isEqualTo(0);
 
-                            Cookie apiKey = mvcResult.getResponse().getCookie("apiKey");
-                            assertThat(apiKey).isNotNull();
-                            assertThat(apiKey.getMaxAge()).isEqualTo(0);
+                            Cookie refreshToken = mvcResult.getResponse().getCookie("refreshToken");
+                            assertThat(refreshToken).isNotNull();
+                            assertThat(refreshToken.getMaxAge()).isEqualTo(0);
                         }
                 );
     }
+
+    private ResultActions withdrawRequest(String accessToken) throws Exception {
+        return mvc
+                .perform(
+                        delete("/api/members/withdraw")
+                                .header("Authorization", "Bearer " + accessToken)
+                ).andDo(print());
+    }
+
+    @Test
+    @DisplayName("계정 삭제")
+    void withdraw() throws Exception {
+        ResultActions resultActions = withdrawRequest(token);
+
+        resultActions
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value("200-1"))
+                .andExpect(jsonPath("$.msg").value("회원탈퇴가 완료되었습니다."));
+
+        // 쿠키 삭제됐는지 확인
+        resultActions
+                .andExpect(
+                        mvcResult -> {
+                            Cookie accessToken = mvcResult.getResponse().getCookie("accessToken");
+                            assertThat(accessToken).isNotNull();    // max-age 를 0으로 해서 반환, 이 단계에서 쿠키 객체는 존재함
+                            assertThat(accessToken.getMaxAge()).isEqualTo(0);
+
+                            Cookie refreshToken = mvcResult.getResponse().getCookie("refreshToken");
+                            assertThat(refreshToken).isNotNull();
+                            assertThat(refreshToken.getMaxAge()).isEqualTo(0);
+                        }
+                );
+
+        // 삭제 플래그가 참
+        Member member = memberService.findByUsernameAll("user1").get();
+        assertThat(member.isDeleteFlag()).isTrue();
+    }
+
 }

@@ -18,12 +18,14 @@ public class MemberDto {
     private String nickname;
     @NonNull
     private String profileImageUrl;
+    private String email;
 
     public MemberDto(Member member) {
         this.id = member.getId();
+        this.nickname = member.getNickname();
+        this.email = member.getEmail();
+        this.profileImageUrl = member.getProfileImageUrl();
         this.createdDate = member.getCreatedDate();
         this.modifiedDate = member.getModifiedDate();
-        this.nickname = member.getNickname();
-        this.profileImageUrl = member.getProfileImageUrl();
     }
 }
