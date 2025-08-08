@@ -61,6 +61,9 @@ dependencies {
 	testImplementation "org.testcontainers:testcontainers:1.19.0"// TestContainer 의 Redis 모듈
 	testImplementation "org.testcontainers:junit-jupiter:1.19.0"
 
+	// kafka
+	implementation 'org.springframework.kafka:spring-kafka'
+
 }
 
 tasks.named('test') {
