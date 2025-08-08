@@ -52,9 +52,9 @@ public class Course extends BaseTime {
     }
 
     public void increaseReservation() {
-        if(this.currentRegistration >= capacity ) {
-            throw new ServiceException("406-1","남은 좌석이 없습니다.");
-        }
+//        if(this.currentRegistration >= capacity) {
+//            throw new ServiceException("406-1","남은 좌석이 없습니다.");
+//        }
         this.currentRegistration++;
     }
 
@@ -63,5 +63,9 @@ public class Course extends BaseTime {
             throw new ServiceException("406-2","수강 인원이 0명 미만이 될 수 없습니다.");
         }
         this.currentRegistration--;
+    }
+
+    public boolean isFull() {
+        return this.currentRegistration >= capacity;
     }
 }

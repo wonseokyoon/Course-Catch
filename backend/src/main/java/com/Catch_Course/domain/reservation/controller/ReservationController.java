@@ -22,17 +22,18 @@ public class ReservationController {
     private final ReservationService reservationService;
     private final Rq rq;
 
-    @Operation(summary = "수강 신청")
+    @Operation(summary = "수강 신청(대기열)")
     @PostMapping()
     public RsData<ReservationDto> reserve(@RequestParam Long courseId) {
 
         Member member = rq.getMember(rq.getDummyMember());  // 실제 멤버 객체
 
-        Reservation reservation = reservationService.reserve(member, courseId);
+        // 대기열에 등록
+        Reservation reservation = reservationService.addToQueue(member, courseId);
 
         return new RsData<>(
                 "200-1",
-                "신청이 완료되었습니다.",
+                "신청이 접수되었습니다. 잠시 기다려주세요.",
                 new ReservationDto(reservation)
         );
     }
