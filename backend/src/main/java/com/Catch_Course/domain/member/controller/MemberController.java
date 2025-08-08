@@ -86,10 +86,10 @@ public class MemberController {
                         @NotBlank @Length(min = 3) String password) {
     }
 
-    record LoginResBody(MemberDto memberDto, String apiKey, String accessToken) {
+    record LoginResBody(MemberDto memberDto, String accessToken, String refreshToken) {
     }
 
-    @Operation(summary = "로그인", description = "로그인 성공 시 ApiKey와 AccessToken 반환. 쿠키로도 반환")
+    @Operation(summary = "로그인", description = "로그인 성공 시 AccessToken 와 refreshToken 반환. 쿠키로도 반환")
     @PostMapping("/login")
     public RsData<LoginResBody> login(@RequestBody @Valid LoginReqBody body) {
 
@@ -101,18 +101,19 @@ public class MemberController {
         }
 
         String accessToken = memberService.getAccessToken(member);
+        String refreshToken = memberService.getRefreshToken(member);
 
         // 쿠키에 추가
         rq.addCookie("accessToken", accessToken);
-        rq.addCookie("apiKey", member.getApiKey());
+        rq.addCookie("refreshToken", refreshToken);
 
         return new RsData<>(
                 "200-1",
                 "%s님 환영합니다.".formatted(member.getNickname()),
                 new LoginResBody(
                         new MemberDto(member),
-                        member.getApiKey(),
-                        accessToken
+                        accessToken,
+                        refreshToken
                 )
         );
     }
@@ -122,7 +123,7 @@ public class MemberController {
     public RsData<Void> logout(HttpSession session) {
         // 쿠키에서 제거
         rq.removeCookie("accessToken");
-        rq.removeCookie("apiKey");
+        rq.removeCookie("refreshToken");
 
         // 세션 무효화
         session.invalidate();
@@ -141,7 +142,7 @@ public class MemberController {
 
         // 탈퇴 후 로그아웃 처리
         rq.removeCookie("accessToken");
-        rq.removeCookie("apiKey");
+        rq.removeCookie("refreshToken");
         session.invalidate();
 
         return new RsData<>(
