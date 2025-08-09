@@ -100,5 +100,5 @@ logging:
 custom:
   jwt:
     secret-key: abcdefghijklmnopqrstuvwxyz1234567890abcdefghijklmnopqrstuvwxyz1234567890
-    expire-seconds: "#{5}"
+    expire-seconds: "#{60 * 60}"
     refresh-expire-seconds: "#{60 * 60 * 24 * 7}"   # 1주일

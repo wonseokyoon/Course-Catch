@@ -37,7 +37,7 @@ public class BaseInitData {
             return;
         }
 
-        for (int i = 1; i <= 50; i++) {
+        for (int i = 1; i <= 100; i++) {
             memberService.join("user%d".formatted(i), "user%d1234".formatted(i), "유저%d".formatted(i), "user%d@example.com".formatted(i), "");
         }
 

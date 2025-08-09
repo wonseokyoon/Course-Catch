@@ -51,7 +51,7 @@ public class CustomAuthenticationFilter extends OncePerRequestFilter {
 
             // 뭐가 하나 없는 경우
             if (tokens.length < 2) {
-                return null;
+                return new AuthToken(tokens[0], null);
             }
 
             return new AuthToken(tokens[0], tokens[1]);

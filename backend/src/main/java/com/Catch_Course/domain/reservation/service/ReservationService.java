@@ -16,6 +16,7 @@ import com.Catch_Course.global.kafka.dto.ReservationRequest;
 import com.Catch_Course.global.kafka.producer.ReservationDeletedProducer;
 import com.Catch_Course.global.kafka.producer.ReservationProducer;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -27,6 +28,7 @@ import java.util.Optional;
 @Service
 @RequiredArgsConstructor
 @Transactional
+@Slf4j
 public class ReservationService {
 
     private final CourseRepository courseRepository;
@@ -42,23 +44,23 @@ public class ReservationService {
 
         Optional<Reservation> optionalReservation = reservationRepository.findByStudentAndCourse(member, course);
         if (optionalReservation.isPresent()) {
-            handleDuplicateReservation(optionalReservation.get(),member.getId(),courseId);
+            handleDuplicateReservation(optionalReservation.get());
             return optionalReservation.get();
         }
 
         // 대기열 등록
         Reservation reservation = Reservation.builder()
-                        .student(member)
-                        .course(course)
-                        .status(ReservationStatus.WAITING)
-                        .build();
+                .student(member)
+                .course(course)
+                .status(ReservationStatus.WAITING)
+                .build();
 
         // 메세지 전송
-        reservationProducer.send(new ReservationRequest(member.getId(), courseId));
+        reservationProducer.send(String.valueOf(courseId), new ReservationRequest(member.getId(), courseId));
         return reservationRepository.save(reservation);
     }
 
-    private void handleDuplicateReservation(Reservation reservation,Long memberId,Long courseId) {
+    private void handleDuplicateReservation(Reservation reservation) {
         ReservationStatus status = reservation.getStatus();
 
         if (status.equals(ReservationStatus.COMPLETED)) {
@@ -92,7 +94,7 @@ public class ReservationService {
     public Page<Reservation> getReservations(Member member, int page, int pageSize) {
         Pageable pageable = PageRequest.of(page - 1, pageSize);
 
-        Page<Reservation> reservations = reservationRepository.findAllByStudentAndStatus(member, ReservationStatus.COMPLETED,pageable);
+        Page<Reservation> reservations = reservationRepository.findAllByStudentAndStatus(member, ReservationStatus.COMPLETED, pageable);
 
         if (reservations.isEmpty()) {
             throw new ServiceException("404-3", "수강신청 이력이 없습니다.");
@@ -105,28 +107,37 @@ public class ReservationService {
      * Kafka Consumer에 의해 호출 될 실제 수강 신청 처리 메서드
      */
     public void processReservation(Long courseId, Long memberId) {
-        // 락을 걸어 강의 정보 조회(동시성 제어)
-        Course course = courseRepository.findByIdWithPessimisticLock(courseId)
-                .orElseThrow(() -> new ServiceException("404-1", "존재하지 않는 강의입니다."));
+        try{
+            // 락을 걸어 강의 정보 조회(동시성 제어)
+            Course course = courseRepository.findByIdWithPessimisticLock(courseId)
+                    .orElseThrow(() -> new ServiceException("404-1", "존재하지 않는 강의입니다."));
 
-        Member member = memberRepository.findById(memberId)
-                .orElseThrow(() -> new ServiceException("404-4", "회원을 찾을 수 없습니다."));
+            Member member = memberRepository.findById(memberId)
+                    .orElseThrow(() -> new ServiceException("404-4", "회원을 찾을 수 없습니다."));
 
-        Reservation reservation = reservationRepository.findByStudentAndCourse(member, course)
-                .orElseThrow(() -> new ServiceException("404-3", "수강신청 이력이 없습니다."));
+            Reservation reservation = reservationRepository.findByStudentAndCourse(member, course)
+                    .orElseThrow(() -> new ServiceException("404-3", "수강신청 이력이 없습니다."));
 
-        if(course.isFull()){
-            reservation.setStatus(ReservationStatus.FAILED);
+            if (course.isFull()) {
+                reservation.setStatus(ReservationStatus.FAILED);
+                reservationRepository.save(reservation);
+                // todo: 이후 메세지 클라이언트에 전송
+                log.error("Reservation failed for memberId: {}, courseId: {}. Error: {}", memberId, courseId, "남은 좌석이 없습니다.");
+                return;
+//                throw new ServiceException("406-1", "남은 좌석이 없습니다.");
+            }
+
+            // 수강 신청 처리
+            course.increaseReservation();
+            courseRepository.save(course);
+
+            reservation.setStatus(ReservationStatus.COMPLETED);
             reservationRepository.save(reservation);
-            throw new ServiceException("406-1","남은 좌석이 없습니다.");
+        }catch (ServiceException e) {
+            // todo: 에러메세지 클라이언트에게 반환
+            log.error("Reservation failed for memberId: {}, courseId: {}. Error: {}", memberId, courseId, e.getMessage());
         }
 
-        // 수강 신청 처리
-        course.increaseReservation();
-        courseRepository.save(course);
-
-        reservation.setStatus(ReservationStatus.COMPLETED);
-        reservationRepository.save(reservation);
     }
 
     public void saveDeleteHistory(Long memberId, Long courseId) {

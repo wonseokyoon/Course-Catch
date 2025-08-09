@@ -15,16 +15,9 @@ public class ReservationConsumer {
     private final ReservationService reservationService;
 
     // 구독
-    @KafkaListener(topics = "course-reservation", groupId = "course")
+    @KafkaListener(topics = "course-reservation", groupId = "course", errorHandler = "myErrorHandler")
     public void consume(ReservationRequest reservationRequest) {
-
         log.info("Consuming reservation request: {}", reservationRequest);
-        try {
-            // 실제 로직 호출
-            reservationService.processReservation(reservationRequest.getCourseId(),reservationRequest.getMemberId());
-        } catch (Exception e){
-            log.error("Error Request: {}", reservationRequest, e);
-        }
-
+        reservationService.processReservation(reservationRequest.getCourseId(),reservationRequest.getMemberId());
     }
 }
