@@ -4,8 +4,11 @@ import com.Catch_Course.domain.course.entity.Course;
 import com.Catch_Course.domain.course.repository.CourseRepository;
 import com.Catch_Course.domain.member.entity.Member;
 import com.Catch_Course.domain.member.repository.MemberRepository;
+import com.Catch_Course.domain.reservation.dto.ReservationDto;
+import com.Catch_Course.domain.reservation.entity.DeletedHistory;
 import com.Catch_Course.domain.reservation.entity.Reservation;
 import com.Catch_Course.domain.reservation.entity.ReservationStatus;
+import com.Catch_Course.domain.reservation.repository.DeleteHistoryRepository;
 import com.Catch_Course.domain.reservation.repository.ReservationRepository;
 import com.Catch_Course.global.exception.ServiceException;
 import com.Catch_Course.global.kafka.dto.ReservationDeletedRequest;
@@ -31,6 +34,7 @@ public class ReservationService {
     private final MemberRepository memberRepository;
     private final ReservationProducer reservationProducer;
     private final ReservationDeletedProducer reservationDeletedProducer;
+    private final DeleteHistoryRepository deleteHistoryRepository;
 
     public Reservation addToQueue(Member member, Long courseId) {
         Course course = courseRepository.findByIdWithPessimisticLock(courseId)  // 비관적 Lock 을 걸고 조회
@@ -38,15 +42,8 @@ public class ReservationService {
 
         Optional<Reservation> optionalReservation = reservationRepository.findByStudentAndCourse(member, course);
         if (optionalReservation.isPresent()) {
-
-            // 중복 신청
-            if(!isCanceled(optionalReservation.get())){
-                handleDuplicateReservation(optionalReservation.get(),member.getId(),courseId);
-                return optionalReservation.get();
-            }
-
-            // 삭제
-            reservationRepository.delete(optionalReservation.get());
+            handleDuplicateReservation(optionalReservation.get(),member.getId(),courseId);
+            return optionalReservation.get();
         }
 
         // 대기열 등록
@@ -58,13 +55,7 @@ public class ReservationService {
 
         // 메세지 전송
         reservationProducer.send(new ReservationRequest(member.getId(), courseId));
-
         return reservationRepository.save(reservation);
-    }
-
-    private boolean isCanceled(Reservation reservation) {
-        ReservationStatus status = reservation.getStatus();
-        return status == ReservationStatus.CANCELED;
     }
 
     private void handleDuplicateReservation(Reservation reservation,Long memberId,Long courseId) {
@@ -77,7 +68,7 @@ public class ReservationService {
         }
     }
 
-    public Reservation cancelReserve(Member member, Long courseId) {
+    public ReservationDto cancelReserve(Member member, Long courseId) {
 
         Course course = courseRepository.findByIdWithPessimisticLock(courseId)  // 잠금
                 .orElseThrow(() -> new ServiceException("404-1", "존재하지 않는 강의입니다."));
@@ -85,19 +76,16 @@ public class ReservationService {
         Reservation reservation = reservationRepository.findByStudentAndCourse(member, course)
                 .orElseThrow(() -> new ServiceException("404-3", "수강 신청 이력이 없습니다."));
 
-        if (reservation.getStatus() == ReservationStatus.CANCELED) {
-            throw new ServiceException("409-2", "이미 취소된 수강 신청입니다.");
-        }
+        ReservationDto reservationDto = new ReservationDto(reservation);
 
         course.decreaseReservation();
         courseRepository.save(course);
 
-        reservation.setStatus(ReservationStatus.CANCELED);    // 상태 관리로 삭제 처리
-//        reservationRepository.delete(reservation);        // 나중에 필요하면 삭제 처리
-
         // 수강 취소는 메세지를 남겨서 저장
         reservationDeletedProducer.send(new ReservationDeletedRequest(member.getId(), courseId));
-        return reservationRepository.save(reservation);
+        reservationRepository.delete(reservation);
+
+        return reservationDto;
     }
 
     @Transactional(readOnly = true)
@@ -139,5 +127,14 @@ public class ReservationService {
 
         reservation.setStatus(ReservationStatus.COMPLETED);
         reservationRepository.save(reservation);
+    }
+
+    public void saveDeleteHistory(Long memberId, Long courseId) {
+        // 기록으로 남김
+        deleteHistoryRepository.save(DeletedHistory.builder()
+                .memberId(memberId)
+                .courseId(courseId)
+                .build()
+        );
     }
 }

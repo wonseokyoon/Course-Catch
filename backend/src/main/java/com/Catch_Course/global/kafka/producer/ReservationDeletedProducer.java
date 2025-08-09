@@ -18,6 +18,7 @@ public class ReservationDeletedProducer {
 
     public void send(ReservationDeletedRequest request) {
         log.info("Sending reservation deleted request: {}", request);
+
         kafkaTemplate.send(TOPIC, request);
     }
 }

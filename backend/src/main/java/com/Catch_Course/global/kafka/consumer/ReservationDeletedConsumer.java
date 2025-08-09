@@ -21,6 +21,7 @@ public class ReservationDeletedConsumer {
         log.info("Consuming reservation request: {}", reservationDeletedRequest);
         try {
             // 실제 로직 호출
+            reservationService.saveDeleteHistory(reservationDeletedRequest.getMemberId(), reservationDeletedRequest.getCourseId());
             log.info("{}의 수강 취소 이력이 성공적으로 처리되었습니다.", reservationDeletedRequest.getCourseId());
         } catch (Exception e){
             log.error("Error Request: {}", reservationDeletedRequest, e);
