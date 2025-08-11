@@ -1,28 +1,30 @@
 package com.Catch_Course.domain.reservation.dto;
 
 import com.Catch_Course.domain.reservation.entity.Reservation;
-import com.fasterxml.jackson.annotation.JsonProperty;
+import com.Catch_Course.domain.reservation.entity.ReservationStatus;
 import lombok.Getter;
 
-import java.time.LocalDateTime;
-
 @Getter
-public class ReservationDto {
+public class ReservationResultDto {
     private long courseId;              // 강의 id
     private String courseTitle;         // 강의 제목
     private long studentId;             // 학생 id
     private String studentName;         // 학생 이름
-    private String status;              // 예약 상태
-    @JsonProperty("createdDatetime")
-    private LocalDateTime createdDate;
+    private ReservationStatus status;
+    private String message;
 
-    public ReservationDto(Reservation reservation) {
+    public ReservationResultDto(Reservation reservation, String message) {
         this.courseId = reservation.getCourse().getId();
         this.courseTitle = reservation.getCourse().getTitle();
         this.studentId = reservation.getStudent().getId();
         this.studentName = reservation.getStudent().getNickname();
-        this.status = reservation.getStatus().toString();
-        this.createdDate = reservation.getCreatedDate();
+        this.status = reservation.getStatus();
+        this.message = message;
+    }
+
+    public ReservationResultDto(ReservationStatus status, String message) {
+        this.status = status;
+        this.message = message;
     }
 
 }

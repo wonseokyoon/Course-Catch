@@ -5,6 +5,7 @@ import com.Catch_Course.domain.course.repository.CourseRepository;
 import com.Catch_Course.domain.member.entity.Member;
 import com.Catch_Course.domain.member.repository.MemberRepository;
 import com.Catch_Course.domain.reservation.dto.ReservationDto;
+import com.Catch_Course.domain.reservation.dto.ReservationResultDto;
 import com.Catch_Course.domain.reservation.entity.DeletedHistory;
 import com.Catch_Course.domain.reservation.entity.Reservation;
 import com.Catch_Course.domain.reservation.entity.ReservationStatus;
@@ -15,6 +16,7 @@ import com.Catch_Course.global.kafka.dto.ReservationDeletedRequest;
 import com.Catch_Course.global.kafka.dto.ReservationRequest;
 import com.Catch_Course.global.kafka.producer.ReservationDeletedProducer;
 import com.Catch_Course.global.kafka.producer.ReservationProducer;
+import com.Catch_Course.global.sse.service.SseService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -37,6 +39,7 @@ public class ReservationService {
     private final ReservationProducer reservationProducer;
     private final ReservationDeletedProducer reservationDeletedProducer;
     private final DeleteHistoryRepository deleteHistoryRepository;
+    private final SseService sseService;
 
     public Reservation addToQueue(Member member, Long courseId) {
         Course course = courseRepository.findByIdWithPessimisticLock(courseId)  // 비관적 Lock 을 걸고 조회
@@ -121,10 +124,9 @@ public class ReservationService {
             if (course.isFull()) {
                 reservation.setStatus(ReservationStatus.FAILED);
                 reservationRepository.save(reservation);
-                // todo: 이후 메세지 클라이언트에 전송
-                log.error("Reservation failed for memberId: {}, courseId: {}. Error: {}", memberId, courseId, "남은 좌석이 없습니다.");
+                ReservationResultDto resultDto = new ReservationResultDto(reservation,"수강 신청 실패: 정원이 마감되었습니다.");
+                sseService.sendToClient(memberId,"ReservationResult", resultDto);
                 return;
-//                throw new ServiceException("406-1", "남은 좌석이 없습니다.");
             }
 
             // 수강 신청 처리
@@ -132,10 +134,12 @@ public class ReservationService {
             courseRepository.save(course);
 
             reservation.setStatus(ReservationStatus.COMPLETED);
+            ReservationResultDto resultDto = new ReservationResultDto(reservation,"수강 신청이 성공하였습니다.");
+            sseService.sendToClient(memberId,"ReservationResult", resultDto);
             reservationRepository.save(reservation);
         }catch (ServiceException e) {
-            // todo: 에러메세지 클라이언트에게 반환
-            log.error("Reservation failed for memberId: {}, courseId: {}. Error: {}", memberId, courseId, e.getMessage());
+            ReservationResultDto resultDto = new ReservationResultDto(ReservationStatus.FAILED,"수강 신청 처리 중 오류가 발생했습니다. "+ e.getMessage());
+            sseService.sendToClient(memberId,"ReservationResult", resultDto);
         }
 
     }
