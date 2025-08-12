@@ -13,6 +13,8 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.mockito.MockedStatic;
+import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -29,6 +31,7 @@ import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.utility.DockerImageName;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -303,5 +306,28 @@ class ReservationControllerTest {
                 .andExpect(jsonPath("$.code").value("404-3"))
                 .andExpect(jsonPath("$.msg").value("수강신청 이력이 없습니다."))
         ;
+    }
+
+    @Test
+    @DisplayName("수강신청 실패 - 지정 시간 이외에 신청")
+    void reserve5() throws Exception {
+        Long courseId = 1L;
+        // 고정 시간
+        LocalDateTime fixedTime = LocalDateTime.of(2025, 8, 12, 6, 50, 0);
+
+        try (MockedStatic<LocalDateTime> mockedStatic = Mockito.mockStatic(LocalDateTime.class)) {
+            // 고정 시간 반환
+            mockedStatic.when(LocalDateTime::now).thenReturn(fixedTime);
+            ResultActions resultActions = mvc.perform(
+                    post("/api/reserve?courseId=%d".formatted(courseId))
+                            .header("Authorization", "Bearer " + token)
+            ).andDo(print());
+
+            resultActions
+                    .andExpect(status().isForbidden())
+                    .andExpect(jsonPath("$.code").value("403-1"))
+                    .andExpect(jsonPath("$.msg").value("수강 신청 가능한 시간이 아닙니다. (매일 09:00 ~ 09:59)"))
+            ;
+        }
     }
 }
