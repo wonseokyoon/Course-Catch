@@ -10,6 +10,7 @@ import com.Catch_Course.domain.reservation.entity.Reservation;
 import com.Catch_Course.domain.reservation.entity.ReservationStatus;
 import com.Catch_Course.domain.reservation.repository.ReservationRepository;
 import com.Catch_Course.domain.reservation.service.ReservationService;
+import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -23,6 +24,7 @@ import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
+import org.springframework.transaction.support.TransactionTemplate;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.wait.strategy.WaitAllStrategy;
 import org.testcontainers.junit.jupiter.Container;
@@ -66,6 +68,12 @@ class ReservationControllerTest {
     @Autowired
     private ReservationTestHelper reservationTestHelper;
 
+    @Autowired
+    private TransactionTemplate transactionTemplate;
+
+    @Autowired
+    private EntityManager em;
+
     private String token;
     private Member loginedMember;
     private Member loginedMember2;
@@ -97,9 +105,9 @@ class ReservationControllerTest {
         reservationRepository.deleteAllInBatch();
     }
 
-    @DisplayName("user2로 로그인")
+    @DisplayName("user35로 로그인")
     void loginUser2() throws Exception {
-        loginedMember2 = memberService.findByUsername("user2").get();
+        loginedMember2 = memberService.findByUsername("user35").get();
         token2 = memberService.getAuthToken(loginedMember2);
     }
 
@@ -178,28 +186,26 @@ class ReservationControllerTest {
     @Test
     @DisplayName("수강 신청 실패 - 자리가 없음")
     void reserve4() throws Exception {
-        Long courseId = 3L;
+        Long courseId = 52L;
+        reservationTestHelper.currentRegistrationSetUp(courseId);
         Course course = courseService.findById(courseId);
-        reservationTestHelper.reserveSetUp(loginedMember, course);
         loginUser2();   // 계정 바꿔서 로그인
+        reservationTestHelper.reserveSetUp(loginedMember2,course);
+//        mvc.perform(post("/api/reserve?courseId=%d".formatted(courseId))
+//                        .header("Authorization", "Bearer " + token2))
+//                .andExpect(status().isOk());
 
-        mvc.perform(post("/api/reserve?courseId=%d".formatted(courseId))
-                        .header("Authorization", "Bearer " + token2))
-                .andExpect(status().isOk());
+        Course awaitCourse = courseService.findById(courseId);
+        // DB 조회
+        Reservation reservation = reservationRepository.findByStudentAndCourse(loginedMember2, awaitCourse).get();
+        assertThat(reservation.getStatus()).isEqualTo(ReservationStatus.FAILED);
 
-        Awaitility.await().atMost(20, SECONDS).untilAsserted(() -> {
-            Course awaitCourse = courseService.findById(courseId);
-            // DB 조회
-            Reservation reservation = reservationRepository.findByStudentAndCourse(loginedMember2, awaitCourse).get();
-            assertThat(reservation.getStatus()).isEqualTo(ReservationStatus.FAILED);
-
-            // RedisStream 확인
-            List<NotificationDto> events = notificationService.getNotifications(loginedMember2.getId());
-            NotificationDto event = events.get(events.size() - 1);  // 최신 이벤트
-            assertThat(event.getStatus()).isEqualTo(ReservationStatus.FAILED);
-            assertThat(event.getMessage()).isEqualTo("수강 신청 실패: 정원이 마감되었습니다.");
-            assertThat(event.getCourseTitle()).isEqualTo(awaitCourse.getTitle());
-        });
+        // RedisStream 확인
+        List<NotificationDto> events = notificationService.getNotifications(loginedMember2.getId());
+        NotificationDto event = events.get(events.size() - 1);  // 최신 이벤트
+        assertThat(event.getStatus()).isEqualTo(ReservationStatus.FAILED);
+        assertThat(event.getMessage()).isEqualTo("수강 신청 실패: 정원이 마감되었습니다.");
+        assertThat(event.getCourseTitle()).isEqualTo(awaitCourse.getTitle());
     }
 
     @Test

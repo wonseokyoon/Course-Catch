@@ -64,5 +64,6 @@ public class BaseInitData {
             Member tempUser = memberService.findByUsername("user%d".formatted(userId)).get();
             courseService.write(tempUser, "강의 제목 %d".formatted(i), "강의 내용 %d".formatted(i), 50);
         }
+        courseService.write(user2, "인기 폭발123 강의", "늦으면 없213다", 1);
     }
 }
