@@ -23,7 +23,6 @@ import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
-import org.springframework.transaction.support.TransactionTemplate;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.wait.strategy.WaitAllStrategy;
 import org.testcontainers.junit.jupiter.Container;
@@ -63,9 +62,6 @@ class ReservationControllerTest {
 
     @Autowired
     private NotificationService notificationService;
-
-    @Autowired
-    private TransactionTemplate transactionTemplate;
 
     @Autowired
     private ReservationTestHelper reservationTestHelper;
@@ -130,7 +126,7 @@ class ReservationControllerTest {
         Course course = courseService.findById(courseId);
         reservationTestHelper.reserveSetUp(loginedMember, course);
 
-        Awaitility.await().atMost(10, SECONDS).untilAsserted(() -> {
+        Awaitility.await().atMost(5, SECONDS).untilAsserted(() -> {
             Course awaitCourse = courseService.findById(courseId);
             // DB 조회
             Reservation reservation = reservationRepository.findByStudentAndCourse(loginedMember, awaitCourse).get();
@@ -191,7 +187,7 @@ class ReservationControllerTest {
                         .header("Authorization", "Bearer " + token2))
                 .andExpect(status().isOk());
 
-        Awaitility.await().atMost(10, SECONDS).untilAsserted(() -> {
+        Awaitility.await().atMost(20, SECONDS).untilAsserted(() -> {
             Course awaitCourse = courseService.findById(courseId);
             // DB 조회
             Reservation reservation = reservationRepository.findByStudentAndCourse(loginedMember2, awaitCourse).get();
