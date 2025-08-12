@@ -23,9 +23,11 @@ import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
 import org.testcontainers.containers.GenericContainer;
-import org.testcontainers.containers.wait.strategy.WaitAllStrategy;
+import org.testcontainers.containers.KafkaContainer;
+import org.testcontainers.containers.wait.strategy.Wait;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
+import org.testcontainers.utility.DockerImageName;
 
 import java.util.List;
 
@@ -65,18 +67,22 @@ class ReservationControllerTest {
     private Member loginedMember2;
     private String token2;
 
+    @Container
+    private static final KafkaContainer KAFKA_CONTAINER = new KafkaContainer(DockerImageName.parse("confluentinc/cp-kafka:7.4.0"));
+
     // Redis 컨테이너 생성 및 포트 설정
     @Container
     private static final GenericContainer<?> REDIS_CONTAINER =
             new GenericContainer<>("redis:6-alpine")
                     .withExposedPorts(6379)
-                    .waitingFor(new WaitAllStrategy());
+                    .waitingFor(Wait.forListeningPort());
 
     // RedisTemplate이 컨테이너의 동적 포트를 사용하도록 설정
     @DynamicPropertySource
     static void setRedisProperties(DynamicPropertyRegistry registry) {
         registry.add("spring.data.redis.host", REDIS_CONTAINER::getHost);
         registry.add("spring.data.redis.port", () -> REDIS_CONTAINER.getMappedPort(6379));
+        registry.add("spring.kafka.bootstrap-servers", KAFKA_CONTAINER::getBootstrapServers);
     }
 
     @BeforeEach
