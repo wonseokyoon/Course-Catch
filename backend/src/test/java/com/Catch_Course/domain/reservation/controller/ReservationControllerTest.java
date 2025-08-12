@@ -31,10 +31,11 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.shaded.org.awaitility.Awaitility;
 
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.hamcrest.Matchers.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -66,10 +67,12 @@ class ReservationControllerTest {
     @Autowired
     private TransactionTemplate transactionTemplate;
 
+    @Autowired
+    private ReservationTestHelper reservationTestHelper;
 
     private String token;
     private Member loginedMember;
-    private Member member2;
+    private Member loginedMember2;
     private String token2;
 
     // Redis 컨테이너 생성 및 포트 설정
@@ -100,8 +103,8 @@ class ReservationControllerTest {
 
     @DisplayName("user2로 로그인")
     void loginUser2() throws Exception {
-        member2 = memberService.findByUsername("user2").get();
-        token2 = memberService.getAuthToken(member2);
+        loginedMember2 = memberService.findByUsername("user2").get();
+        token2 = memberService.getAuthToken(loginedMember2);
     }
 
     @Test
@@ -124,22 +127,13 @@ class ReservationControllerTest {
     @DisplayName("수강 신청 - 성공 - SSE 이벤트 수신")
     void reserve() throws Exception {
         Long courseId = 1L;
+        Course course = courseService.findById(courseId);
+        reservationTestHelper.reserveSetUp(loginedMember, course);
 
-        // 나의 트랜잭션으로 묶여 실행되고, 끝나면 즉시 커밋
-        transactionTemplate.execute(status -> {
-            try{
-                mvc.perform(post("/api/reserve?courseId=%d".formatted(courseId))
-                                .header("Authorization", "Bearer " + token))
-                        .andExpect(status().isOk());
-            } catch (Exception e) {
-                throw new RuntimeException(e);
-            }
-            return null;
-        });
-        Awaitility.await().atMost(10, TimeUnit.SECONDS).untilAsserted(() -> {
-            Course course = courseService.findById(courseId);
+        Awaitility.await().atMost(10, SECONDS).untilAsserted(() -> {
+            Course awaitCourse = courseService.findById(courseId);
             // DB 조회
-            Reservation reservation = reservationRepository.findByStudentAndCourse(loginedMember, course).get();
+            Reservation reservation = reservationRepository.findByStudentAndCourse(loginedMember, awaitCourse).get();
             assertThat(reservation.getStatus()).isEqualTo(ReservationStatus.COMPLETED);
 
             // RedisStream 확인
@@ -147,167 +141,177 @@ class ReservationControllerTest {
             NotificationDto event = events.get(events.size() - 1);  // 최신 이벤트
             assertThat(event.getStatus()).isEqualTo(ReservationStatus.COMPLETED);
             assertThat(event.getMessage()).isEqualTo("수강 신청이 성공하였습니다.");
-            assertThat(event.getCourseTitle()).isEqualTo(course.getTitle());
+            assertThat(event.getCourseTitle()).isEqualTo(awaitCourse.getTitle());
         });
     }
 
-//    @Test
-//    @DisplayName("수강 신청 실패 - 이미 신청한 강의")
-//    void reserve2() throws Exception {
-//        Long courseId = 1L;
-//        reservationService.reserve(loginedMember, courseId);    // 수강 신청
-//
-//        ResultActions resultActions = mvc.perform(
-//                post("/api/reserve?courseId=%d".formatted(courseId))
-//                        .header("Authorization", "Bearer " + token)
-//        ).andDo(print());
-//
-//        resultActions
-//                .andExpect(status().isConflict())
-//                .andExpect(jsonPath("$.code").value("409-1"))
-//                .andExpect(jsonPath("$.msg").value("이미 신청한 강의입니다."));
-//    }
+    @Test
+    @DisplayName("수강 신청 실패 - 이미 신청한 강의")
+    void reserve2() throws Exception {
+        Long courseId = 1L;
+        Course course = courseService.findById(courseId);
+        reservationTestHelper.reserveSetUp(loginedMember, course);
 
-//    @Test
-//    @DisplayName("수강 신청 실패 - 없는 강의")
-//    void reserve3() throws Exception {
-//        Long courseId = 999L;
-//        ResultActions resultActions = mvc.perform(
-//                post("/api/reserve?courseId=%d".formatted(courseId))
-//                        .header("Authorization", "Bearer " + token)
-//        ).andDo(print());
-//
-//        resultActions
-//                .andExpect(status().isNotFound())
-//                .andExpect(jsonPath("$.code").value("404-1"))
-//                .andExpect(jsonPath("$.msg").value("존재하지 않는 강의입니다."));
-//    }
-//
-//    @Test
-//    @DisplayName("수강 신청 실패 - 자리가 없음")
-//    void reserve4() throws Exception {
-//        Long courseId = 3L;
-//        reservationService.reserve(loginedMember, courseId);    // 수강 신청
-//
-//        loginUser2();   // 계정 바꿔서 로그인
-//
-//        ResultActions resultActions = mvc.perform(
-//                post("/api/reserve?courseId=%d".formatted(courseId))
-//                        .header("Authorization", "Bearer " + token2)
-//        ).andDo(print());
-//
-//        resultActions
-//                .andExpect(status().isNotAcceptable())
-//                .andExpect(jsonPath("$.code").value("406-1"))
-//                .andExpect(jsonPath("$.msg").value("남은 좌석이 없습니다."));
-//    }
-//
-//    @Test
-//    @DisplayName("수강 취소")
-//    void cancelReservation() throws Exception {
-//        Long courseId = 1L;
-//        reservationService.reserve(loginedMember, courseId);    // 수강 신청
-//
-//        ResultActions resultActions = mvc.perform(
-//                delete("/api/reserve?courseId=%d".formatted(courseId))
-//                        .header("Authorization", "Bearer " + token)
-//        ).andDo(print());
-//
-//        resultActions
-//                .andExpect(status().isOk())
-//                .andExpect(jsonPath("$.code").value("200-1"))
-//                .andExpect(jsonPath("$.msg").value("수강 취소되었습니다."));
-//    }
-//
-//    @Test
-//    @DisplayName("수강 취소 실패 - 이미 취소")
-//    void cancelReservation2() throws Exception {
-//        Long courseId = 1L;
-//        cancelReservation();    // 수강 취소
-//
-//        ResultActions resultActions = mvc.perform(
-//                delete("/api/reserve?courseId=%d".formatted(courseId))
-//                        .header("Authorization", "Bearer " + token)
-//        ).andDo(print());
-//
-//        resultActions
-//                .andExpect(status().isConflict())
-//                .andExpect(jsonPath("$.code").value("409-2"))
-//                .andExpect(jsonPath("$.msg").value("이미 취소된 수강 신청입니다."));
-//    }
-//
-//    @Test
-//    @DisplayName("수강 취소 실패 - 이력이 없음")
-//    void cancelReservation3() throws Exception {
-//        Long courseId = 3L;
-//
-//        ResultActions resultActions = mvc.perform(
-//                delete("/api/reserve?courseId=%d".formatted(courseId))
-//                        .header("Authorization", "Bearer " + token)
-//        ).andDo(print());
-//
-//        resultActions
-//                .andExpect(status().isNotFound())
-//                .andExpect(jsonPath("$.code").value("404-3"))
-//                .andExpect(jsonPath("$.msg").value("수강 신청 이력이 없습니다."));
-//    }
-//
-//    @Test
-//    @DisplayName("수강 취소 실패 - 존재하지 않는 강의")
-//    void cancelReservation4() throws Exception {
-//        Long courseId = 999L;
-//
-//        ResultActions resultActions = mvc.perform(
-//                delete("/api/reserve?courseId=%d".formatted(courseId))
-//                        .header("Authorization", "Bearer " + token)
-//        ).andDo(print());
-//
-//        resultActions
-//                .andExpect(status().isNotFound())
-//                .andExpect(jsonPath("$.code").value("404-1"))
-//                .andExpect(jsonPath("$.msg").value("존재하지 않는 강의입니다."));
-//    }
-//
-//    @Test
-//    @DisplayName("신청 목록 조회")
-//    void getReservation() throws Exception {
-//        int page = 1;
-//        int pageSize = 5;
-//
-//        Long courseId = 1L;
-//        mvc.perform(       // 수강 신청
-//                post("/api/reserve?courseId=%d".formatted(courseId))
-//                        .header("Authorization", "Bearer " + token)
-//        );
-//
-//        ResultActions resultActions = mvc.perform(
-//                get("/api/reserve/me?page=%d&pageSize=%d".formatted(page, pageSize))
-//                        .header("Authorization", "Bearer " + token)
-//        );
-//
-//        resultActions
-//                .andExpect(status().isOk())
-//                .andExpect(jsonPath("$.code").value("200-1"))
-//                .andExpect(jsonPath("$.msg").value("신청 목록 조회가 완료되었습니다."))
-//                .andExpect(jsonPath("$.data.items.length()", lessThanOrEqualTo(pageSize)))
-//                .andExpect(jsonPath("$.data.currentPage").value(page))
-//                .andExpect(jsonPath("$.data[*].studentName").value(everyItem(equalTo(loginedMember.getNickname()))))
-//
-//        ;
-//    }
-//
-//    @Test
-//    @DisplayName("신청 목록 조회 실패 - 신청 내역이 없음")
-//    void getReservation2() throws Exception {
-//        ResultActions resultActions = mvc.perform(
-//                get("/api/reserve/me")
-//                        .header("Authorization", "Bearer " + token)
-//        );
-//
-//        resultActions
-//                .andExpect(status().isNotFound())
-//                .andExpect(jsonPath("$.code").value("404-3"))
-//                .andExpect(jsonPath("$.msg").value("수강신청 이력이 없습니다."))
-//        ;
-//    }
+        ResultActions resultActions = mvc.perform(
+                post("/api/reserve?courseId=%d".formatted(courseId))
+                        .header("Authorization", "Bearer " + token)
+        ).andDo(print());
+
+        resultActions
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("409-1"))
+                .andExpect(jsonPath("$.msg").value("이미 신청한 강의입니다."));
+    }
+
+    @Test
+    @DisplayName("수강 신청 실패 - 없는 강의")
+    void reserve3() throws Exception {
+        Long courseId = 999L;
+
+        ResultActions resultActions = mvc.perform(
+                post("/api/reserve?courseId=%d".formatted(courseId))
+                        .header("Authorization", "Bearer " + token)
+        ).andDo(print());
+
+        resultActions
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("404-1"))
+                .andExpect(jsonPath("$.msg").value("존재하지 않는 강의입니다."));
+    }
+
+    @Test
+    @DisplayName("수강 신청 실패 - 자리가 없음")
+    void reserve4() throws Exception {
+        Long courseId = 3L;
+        Course course = courseService.findById(courseId);
+        reservationTestHelper.reserveSetUp(loginedMember, course);
+        loginUser2();   // 계정 바꿔서 로그인
+
+        mvc.perform(post("/api/reserve?courseId=%d".formatted(courseId))
+                        .header("Authorization", "Bearer " + token2))
+                .andExpect(status().isOk());
+
+        Awaitility.await().atMost(10, SECONDS).untilAsserted(() -> {
+            Course awaitCourse = courseService.findById(courseId);
+            // DB 조회
+            Reservation reservation = reservationRepository.findByStudentAndCourse(loginedMember2, awaitCourse).get();
+            assertThat(reservation.getStatus()).isEqualTo(ReservationStatus.FAILED);
+
+            // RedisStream 확인
+            List<NotificationDto> events = notificationService.getNotifications(loginedMember2.getId());
+            NotificationDto event = events.get(events.size() - 1);  // 최신 이벤트
+            assertThat(event.getStatus()).isEqualTo(ReservationStatus.FAILED);
+            assertThat(event.getMessage()).isEqualTo("수강 신청 실패: 정원이 마감되었습니다.");
+            assertThat(event.getCourseTitle()).isEqualTo(awaitCourse.getTitle());
+        });
+    }
+
+    @Test
+    @DisplayName("수강 취소")
+    void cancelReservation() throws Exception {
+        Long courseId = 1L;
+        Course course = courseService.findById(courseId);
+        reservationTestHelper.reserveSetUp(loginedMember, course);
+
+        ResultActions resultActions = mvc.perform(
+                delete("/api/reserve?courseId=%d".formatted(courseId))
+                        .header("Authorization", "Bearer " + token)
+        ).andDo(print());
+
+        resultActions
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value("200-1"))
+                .andExpect(jsonPath("$.msg").value("수강 취소되었습니다."));
+    }
+
+    @Test
+    @DisplayName("수강 취소 실패 - 이미 취소")
+    void cancelReservation2() throws Exception {
+        Long courseId = 1L;
+        cancelReservation();    // 수강 취소
+
+        ResultActions resultActions = mvc.perform(
+                delete("/api/reserve?courseId=%d".formatted(courseId))
+                        .header("Authorization", "Bearer " + token)
+        ).andDo(print());
+
+        resultActions
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("404-3"))
+                .andExpect(jsonPath("$.msg").value("수강 신청 이력이 없습니다."));
+    }
+
+    @Test
+    @DisplayName("수강 취소 실패 - 이력이 없음")
+    void cancelReservation3() throws Exception {
+        Long courseId = 3L;
+
+        ResultActions resultActions = mvc.perform(
+                delete("/api/reserve?courseId=%d".formatted(courseId))
+                        .header("Authorization", "Bearer " + token)
+        ).andDo(print());
+
+        resultActions
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("404-3"))
+                .andExpect(jsonPath("$.msg").value("수강 신청 이력이 없습니다."));
+    }
+
+    @Test
+    @DisplayName("수강 취소 실패 - 존재하지 않는 강의")
+    void cancelReservation4() throws Exception {
+        Long courseId = 999L;
+
+        ResultActions resultActions = mvc.perform(
+                delete("/api/reserve?courseId=%d".formatted(courseId))
+                        .header("Authorization", "Bearer " + token)
+        ).andDo(print());
+
+        resultActions
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("404-1"))
+                .andExpect(jsonPath("$.msg").value("존재하지 않는 강의입니다."));
+    }
+
+    @Test
+    @DisplayName("신청 목록 조회")
+    void getReservation() throws Exception {
+        int page = 1;
+        int pageSize = 5;
+
+        Long courseId = 1L;
+        Course course = courseService.findById(courseId);
+        reservationTestHelper.reserveSetUp(loginedMember, course);
+
+        Awaitility.await().atMost(10, SECONDS).untilAsserted(() -> {
+            ResultActions resultActions = mvc.perform(
+                    get("/api/reserve/me?page=%d&pageSize=%d".formatted(page, pageSize))
+                            .header("Authorization", "Bearer " + token)
+            );
+
+            resultActions
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.code").value("200-1"))
+                    .andExpect(jsonPath("$.msg").value("신청 목록 조회가 완료되었습니다."))
+                    .andExpect(jsonPath("$.data.items.length()", lessThanOrEqualTo(pageSize)))
+                    .andExpect(jsonPath("$.data.currentPage").value(page))
+                    .andExpect(jsonPath("$.data[*].studentName").value(everyItem(equalTo(loginedMember.getNickname()))))
+            ;
+        });
+    }
+
+    @Test
+    @DisplayName("신청 목록 조회 실패 - 신청 내역이 없음")
+    void getReservation2() throws Exception {
+        ResultActions resultActions = mvc.perform(
+                get("/api/reserve/me")
+                        .header("Authorization", "Bearer " + token)
+        );
+
+        resultActions
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("404-3"))
+                .andExpect(jsonPath("$.msg").value("수강신청 이력이 없습니다."))
+        ;
+    }
 }
