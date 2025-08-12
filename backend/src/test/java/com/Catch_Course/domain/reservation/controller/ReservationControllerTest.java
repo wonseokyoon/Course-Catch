@@ -9,8 +9,6 @@ import com.Catch_Course.domain.notification.service.NotificationService;
 import com.Catch_Course.domain.reservation.entity.Reservation;
 import com.Catch_Course.domain.reservation.entity.ReservationStatus;
 import com.Catch_Course.domain.reservation.repository.ReservationRepository;
-import com.Catch_Course.domain.reservation.service.ReservationService;
-import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -24,7 +22,6 @@ import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
-import org.springframework.transaction.support.TransactionTemplate;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.wait.strategy.WaitAllStrategy;
 import org.testcontainers.junit.jupiter.Container;
@@ -51,9 +48,6 @@ class ReservationControllerTest {
     private MockMvc mvc;
 
     @Autowired
-    private ReservationService reservationService;
-
-    @Autowired
     private CourseService courseService;
 
     @Autowired
@@ -67,12 +61,6 @@ class ReservationControllerTest {
 
     @Autowired
     private ReservationTestHelper reservationTestHelper;
-
-    @Autowired
-    private TransactionTemplate transactionTemplate;
-
-    @Autowired
-    private EntityManager em;
 
     private String token;
     private Member loginedMember;
@@ -285,7 +273,7 @@ class ReservationControllerTest {
         Course course = courseService.findById(courseId);
         reservationTestHelper.reserveSetUp(loginedMember, course);
 
-        Awaitility.await().atMost(10, SECONDS).untilAsserted(() -> {
+        Awaitility.await().atMost(5, SECONDS).untilAsserted(() -> {
             ResultActions resultActions = mvc.perform(
                     get("/api/reserve/me?page=%d&pageSize=%d".formatted(page, pageSize))
                             .header("Authorization", "Bearer " + token)
