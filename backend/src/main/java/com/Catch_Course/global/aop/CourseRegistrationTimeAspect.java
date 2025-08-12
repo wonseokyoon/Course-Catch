@@ -8,9 +8,9 @@ import org.aspectj.lang.annotation.Before;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
-import java.time.LocalDateTime;
 import java.time.LocalTime;
-import java.time.ZoneId;
+import java.time.ZonedDateTime;
+import java.util.function.Supplier;
 
 @Aspect
 @Component
@@ -18,21 +18,20 @@ import java.time.ZoneId;
 @RequiredArgsConstructor
 public class CourseRegistrationTimeAspect {
 
+    private final Supplier<ZonedDateTime> clockSupplier;
+
     @Value("${app.registration-time.start}")
-    private String startTimeString; // "19:00" 문자열을 주입받음
+    private String startTimeString; // 지정 시간
 
     @Value("${app.registration-time.duration-in-minutes}")
-    private int durationInMinutes; // 60 숫자를 주입받음
-
-    private static final ZoneId SEOUL_ZONE_ID = ZoneId.of("Asia/Seoul");
+    private int durationInMinutes; // 유효기간 주입
 
     @Before("@annotation(com.Catch_Course.global.aop.CheckTime)")
     public void checkTime() {
-        LocalDateTime now = LocalDateTime.now(SEOUL_ZONE_ID);
-
+        ZonedDateTime now = clockSupplier.get();
         LocalTime configuredStartTime = LocalTime.parse(startTimeString);
-        LocalDateTime startTime = now.with(configuredStartTime);
-        LocalDateTime endTime = startTime.plusMinutes(durationInMinutes);
+        ZonedDateTime startTime = ZonedDateTime.of(now.toLocalDate(), configuredStartTime, now.getZone());
+        ZonedDateTime endTime = startTime.plusMinutes(durationInMinutes);
 
         log.info("수강 신청 시도: 현재 시간={}, 허용 구간: {} ~ {}", now, startTime, endTime);
 
