@@ -5,7 +5,7 @@ import com.Catch_Course.domain.course.repository.CourseRepository;
 import com.Catch_Course.domain.member.entity.Member;
 import com.Catch_Course.domain.member.repository.MemberRepository;
 import com.Catch_Course.domain.reservation.dto.ReservationDto;
-import com.Catch_Course.domain.reservation.dto.ReservationResultDto;
+import com.Catch_Course.domain.notification.dto.NotificationDto;
 import com.Catch_Course.domain.reservation.entity.DeletedHistory;
 import com.Catch_Course.domain.reservation.entity.Reservation;
 import com.Catch_Course.domain.reservation.entity.ReservationStatus;
@@ -124,8 +124,8 @@ public class ReservationService {
             if (course.isFull()) {
                 reservation.setStatus(ReservationStatus.FAILED);
                 reservationRepository.save(reservation);
-                ReservationResultDto resultDto = new ReservationResultDto(reservation,"수강 신청 실패: 정원이 마감되었습니다.");
-                sseService.sendToClient(memberId,"ReservationResult", resultDto);
+                NotificationDto notificationDto = new NotificationDto(reservation,"수강 신청 실패: 정원이 마감되었습니다.");
+                sseService.sendToClient(memberId,"ReservationResult", notificationDto);
                 return;
             }
 
@@ -134,14 +134,13 @@ public class ReservationService {
             courseRepository.save(course);
 
             reservation.setStatus(ReservationStatus.COMPLETED);
-            ReservationResultDto resultDto = new ReservationResultDto(reservation,"수강 신청이 성공하였습니다.");
-            sseService.sendToClient(memberId,"ReservationResult", resultDto);
+            NotificationDto notificationDto = new NotificationDto(reservation,"수강 신청이 성공하였습니다.");
+            sseService.sendToClient(memberId,"ReservationResult", notificationDto);
             reservationRepository.save(reservation);
         }catch (ServiceException e) {
-            ReservationResultDto resultDto = new ReservationResultDto(ReservationStatus.FAILED,"수강 신청 처리 중 오류가 발생했습니다. "+ e.getMessage());
-            sseService.sendToClient(memberId,"ReservationResult", resultDto);
+            NotificationDto notificationDto = new NotificationDto(ReservationStatus.FAILED,"수강 신청 처리 중 오류가 발생했습니다. "+ e.getMessage());
+            sseService.sendToClient(memberId,"ReservationResult", notificationDto);
         }
-
     }
 
     public void saveDeleteHistory(Long memberId, Long courseId) {

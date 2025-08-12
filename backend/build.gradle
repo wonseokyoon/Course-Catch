@@ -58,12 +58,15 @@ dependencies {
 	testImplementation 'org.springframework.boot:spring-boot-starter-data-redis'
 
 	// Container
-	testImplementation "org.testcontainers:testcontainers:1.19.0"// TestContainer 의 Redis 모듈
-	testImplementation "org.testcontainers:junit-jupiter:1.19.0"
+	testImplementation "org.testcontainers:testcontainers:1.20.0"// TestContainer 의 Redis 모듈
+	testImplementation "org.testcontainers:junit-jupiter:1.20.0"
+	testImplementation "org.testcontainers:kafka:1.20.0"
 
 	// kafka
 	implementation 'org.springframework.kafka:spring-kafka'
 
+	testAnnotationProcessor 'org.projectlombok:lombok'
+	testImplementation 'org.awaitility:awaitility'
 }
 
 tasks.named('test') {

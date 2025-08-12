@@ -1,6 +1,9 @@
 package com.Catch_Course.global.sse.service;
 
+import com.Catch_Course.domain.notification.service.NotificationService;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
@@ -10,11 +13,16 @@ import java.util.concurrent.ConcurrentHashMap;
 
 @Service
 @Slf4j
+@RequiredArgsConstructor
 public class SseService {
     private final Map<Long, SseEmitter> emitters = new ConcurrentHashMap<>();
+    private final RedisTemplate<String, Object> redisTemplate;
+    private final NotificationService notificationService;
+    private static final String NOTIFICATION_STREAM_PREFIX = "notification_stream:";
 
     public SseEmitter subscribe(Long memberId) {
-        SseEmitter emitter = new SseEmitter(3600 * 1000L);
+
+        SseEmitter emitter = new SseEmitter(60 * 10 * 1000L);    // 10분
         this.emitters.put(memberId, emitter);
 
         // Emitter 가 완료되거나 타임아웃되면 맵에서 제거
@@ -32,13 +40,17 @@ public class SseService {
         });
 
         // 연결이 생성되었을 때, 503 Service Unavailable 방지를 위해 더미 데이터 전송
-        sendToClient(memberId, "connected", "SSE connection established.");
+        sendDummyEvent(memberId, "connected", "SSE connection established.");
 
         return emitter;
     }
 
     // 이벤트 전송
     public void sendToClient(Long memberId, String eventName, Object data) {
+        // 메세지 저장
+        notificationService.saveNotification(memberId, data);
+
+        // 채널이 열려있다면, 이벤트 전송
         SseEmitter emitter = this.emitters.get(memberId);
         if (emitter != null) {
             try {
@@ -51,6 +63,21 @@ public class SseService {
             }
         } else {
             log.warn("No SseEmitter found for memberId: {}", memberId);
+        }
+    }
+
+    // 실제 저장하지 않는 더미 이벤트
+    private void sendDummyEvent(Long memberId, String eventName, Object data) {
+        SseEmitter emitter = this.emitters.get(memberId);
+        if (emitter != null) {
+            try {
+                emitter.send(SseEmitter.event()
+                        .name(eventName)
+                        .data(data));
+            } catch (IOException e) {
+                log.error("Failed to send dummy event to memberId: {}", memberId, e);
+                this.emitters.remove(memberId);
+            }
         }
     }
 }
