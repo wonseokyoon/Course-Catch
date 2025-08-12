@@ -106,4 +106,4 @@ custom:
 app:
   registration-time:
     start: "19:00"                # 시작 시간 (HH:mm 형식)
-    duration-in-minutes: 60
+    duration-in-minutes: 240
