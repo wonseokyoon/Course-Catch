@@ -49,17 +49,16 @@ public class NotificationService {
 
         return records.stream()
                 .map(record -> {
-                    Map<Object,Object> values = record.getValue();
+                    Map<Object, Object> values = record.getValue();
                     String jsonData = (String) values.get("data");
-                    try{
+                    try {
                         return objectMapper.readValue(jsonData, NotificationDto.class);
-                    }catch (Exception e){
+                    } catch (Exception e) {
+                        log.error("JSON Deserialization 실패. jsonData: {}, 에러: {}", jsonData, e.getMessage());
                         return null;
                     }
                 })
                 .filter(Objects::nonNull)
                 .collect(Collectors.toList());
     }
-
-
 }
