@@ -10,6 +10,7 @@ import com.Catch_Course.domain.reservation.entity.Reservation;
 import com.Catch_Course.domain.reservation.entity.ReservationStatus;
 import com.Catch_Course.domain.reservation.repository.ReservationRepository;
 import com.Catch_Course.domain.reservation.service.ReservationService;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -92,6 +93,11 @@ class ReservationControllerTest {
         token = memberService.getAuthToken(loginedMember);
     }
 
+    @AfterEach
+    void tearDown() {
+        reservationRepository.deleteAllInBatch();
+    }
+
     @DisplayName("user2로 로그인")
     void loginUser2() throws Exception {
         member2 = memberService.findByUsername("user2").get();
@@ -117,7 +123,7 @@ class ReservationControllerTest {
     @Test
     @DisplayName("수강 신청 - 성공 - SSE 이벤트 수신")
     void reserve() throws Exception {
-        Long courseId = 2L;
+        Long courseId = 1L;
 
         // 나의 트랜잭션으로 묶여 실행되고, 끝나면 즉시 커밋
         transactionTemplate.execute(status -> {
@@ -145,7 +151,6 @@ class ReservationControllerTest {
         });
     }
 
-//
 //    @Test
 //    @DisplayName("수강 신청 실패 - 이미 신청한 강의")
 //    void reserve2() throws Exception {
@@ -162,7 +167,7 @@ class ReservationControllerTest {
 //                .andExpect(jsonPath("$.code").value("409-1"))
 //                .andExpect(jsonPath("$.msg").value("이미 신청한 강의입니다."));
 //    }
-//
+
 //    @Test
 //    @DisplayName("수강 신청 실패 - 없는 강의")
 //    void reserve3() throws Exception {
