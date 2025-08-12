@@ -26,11 +26,9 @@ import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.wait.strategy.WaitAllStrategy;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
-import org.testcontainers.shaded.org.awaitility.Awaitility;
 
 import java.util.List;
 
-import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
@@ -122,19 +120,17 @@ class ReservationControllerTest {
         Course course = courseService.findById(courseId);
         reservationTestHelper.reserveSetUp(loginedMember, course);
 
-        Awaitility.await().atMost(5, SECONDS).untilAsserted(() -> {
-            Course awaitCourse = courseService.findById(courseId);
-            // DB 조회
-            Reservation reservation = reservationRepository.findByStudentAndCourse(loginedMember, awaitCourse).get();
-            assertThat(reservation.getStatus()).isEqualTo(ReservationStatus.COMPLETED);
+        Course awaitCourse = courseService.findById(courseId);
+        // DB 조회
+        Reservation reservation = reservationRepository.findByStudentAndCourse(loginedMember, awaitCourse).get();
+        assertThat(reservation.getStatus()).isEqualTo(ReservationStatus.COMPLETED);
 
-            // RedisStream 확인
-            List<NotificationDto> events = notificationService.getNotifications(loginedMember.getId());
-            NotificationDto event = events.get(events.size() - 1);  // 최신 이벤트
-            assertThat(event.getStatus()).isEqualTo(ReservationStatus.COMPLETED);
-            assertThat(event.getMessage()).isEqualTo("수강 신청이 성공하였습니다.");
-            assertThat(event.getCourseTitle()).isEqualTo(awaitCourse.getTitle());
-        });
+        // RedisStream 확인
+        List<NotificationDto> events = notificationService.getNotifications(loginedMember.getId());
+        NotificationDto event = events.get(events.size() - 1);  // 최신 이벤트
+        assertThat(event.getStatus()).isEqualTo(ReservationStatus.COMPLETED);
+        assertThat(event.getMessage()).isEqualTo("수강 신청이 성공하였습니다.");
+        assertThat(event.getCourseTitle()).isEqualTo(awaitCourse.getTitle());
     }
 
     @Test
@@ -273,21 +269,19 @@ class ReservationControllerTest {
         Course course = courseService.findById(courseId);
         reservationTestHelper.reserveSetUp(loginedMember, course);
 
-        Awaitility.await().atMost(5, SECONDS).untilAsserted(() -> {
-            ResultActions resultActions = mvc.perform(
-                    get("/api/reserve/me?page=%d&pageSize=%d".formatted(page, pageSize))
-                            .header("Authorization", "Bearer " + token)
-            );
+        ResultActions resultActions = mvc.perform(
+                get("/api/reserve/me?page=%d&pageSize=%d".formatted(page, pageSize))
+                        .header("Authorization", "Bearer " + token)
+        );
 
-            resultActions
-                    .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.code").value("200-1"))
-                    .andExpect(jsonPath("$.msg").value("신청 목록 조회가 완료되었습니다."))
-                    .andExpect(jsonPath("$.data.items.length()", lessThanOrEqualTo(pageSize)))
-                    .andExpect(jsonPath("$.data.currentPage").value(page))
-                    .andExpect(jsonPath("$.data[*].studentName").value(everyItem(equalTo(loginedMember.getNickname()))))
-            ;
-        });
+        resultActions
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value("200-1"))
+                .andExpect(jsonPath("$.msg").value("신청 목록 조회가 완료되었습니다."))
+                .andExpect(jsonPath("$.data.items.length()", lessThanOrEqualTo(pageSize)))
+                .andExpect(jsonPath("$.data.currentPage").value(page))
+                .andExpect(jsonPath("$.data[*].studentName").value(everyItem(equalTo(loginedMember.getNickname()))))
+        ;
     }
 
     @Test
