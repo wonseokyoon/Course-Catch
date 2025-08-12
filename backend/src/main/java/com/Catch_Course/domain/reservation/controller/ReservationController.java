@@ -6,6 +6,7 @@ import com.Catch_Course.domain.reservation.dto.ReservationDto;
 import com.Catch_Course.domain.reservation.entity.Reservation;
 import com.Catch_Course.domain.reservation.service.ReservationService;
 import com.Catch_Course.global.Rq;
+import com.Catch_Course.global.aop.CheckTime;
 import com.Catch_Course.global.dto.RsData;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -24,6 +25,7 @@ public class ReservationController {
 
     @Operation(summary = "수강 신청(대기열)")
     @PostMapping()
+    @CheckTime
     public RsData<ReservationDto> reserve(@RequestParam Long courseId) {
 
         Member member = rq.getMember(rq.getDummyMember());  // 실제 멤버 객체
