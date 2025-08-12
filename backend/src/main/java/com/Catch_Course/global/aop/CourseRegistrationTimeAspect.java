@@ -10,6 +10,7 @@ import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.time.ZoneId;
 
 @Aspect
 @Component
@@ -23,9 +24,11 @@ public class CourseRegistrationTimeAspect {
     @Value("${app.registration-time.duration-in-minutes}")
     private int durationInMinutes; // 60 숫자를 주입받음
 
+    private static final ZoneId SEOUL_ZONE_ID = ZoneId.of("Asia/Seoul");
+
     @Before("@annotation(com.Catch_Course.global.aop.CheckTime)")
     public void checkTime() {
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = LocalDateTime.now(SEOUL_ZONE_ID);
 
         LocalTime configuredStartTime = LocalTime.parse(startTimeString);
         LocalDateTime startTime = now.with(configuredStartTime);
