@@ -55,7 +55,7 @@ dependencies {
 
 	// redis
 	implementation 'org.springframework.boot:spring-boot-starter-data-redis'
-	testImplementation 'org.springframework.boot:spring-boot-starter-data-redis'
+//	testImplementation 'org.springframework.boot:spring-boot-starter-data-redis'
 
 	// Container
 	testImplementation "org.testcontainers:testcontainers:1.20.0"// TestContainer 의 Redis 모듈

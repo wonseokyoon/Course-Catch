@@ -9,6 +9,7 @@ import org.springframework.data.redis.connection.stream.MapRecord;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
+import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -22,6 +23,8 @@ public class NotificationService {
     private static final String KEY_PREFIX = "notifications:";
     private final ObjectMapper objectMapper;
     private final RedisTemplate<String, String> redisTemplate;
+    private static final int MAX_TOTAL_MESSAGES = 10;
+    private static final Duration EXPIRE = Duration.ofHours(12);
 
     // 알림 저장
     public void saveNotification(Long memberId, Object data) {
@@ -33,6 +36,8 @@ public class NotificationService {
             String json = objectMapper.writeValueAsString(data);
             Map<String, String> streamMessage = Map.of("data", json);
             redisTemplate.opsForStream().add(key, streamMessage);
+            redisTemplate.opsForStream().trim(key, MAX_TOTAL_MESSAGES);     // 스트림 길이 제한
+            redisTemplate.expire(key, EXPIRE);      // 만료 시간 12시간
         } catch (Exception e) {
             log.error("Failed to serialize NotificationDto for memberId: {}", memberId, e);
         }
