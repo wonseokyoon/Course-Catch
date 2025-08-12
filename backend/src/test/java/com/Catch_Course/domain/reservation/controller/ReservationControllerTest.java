@@ -4,6 +4,8 @@ import com.Catch_Course.domain.course.entity.Course;
 import com.Catch_Course.domain.course.service.CourseService;
 import com.Catch_Course.domain.member.entity.Member;
 import com.Catch_Course.domain.member.service.MemberService;
+import com.Catch_Course.domain.notification.dto.NotificationDto;
+import com.Catch_Course.domain.notification.service.NotificationService;
 import com.Catch_Course.domain.reservation.entity.Reservation;
 import com.Catch_Course.domain.reservation.entity.ReservationStatus;
 import com.Catch_Course.domain.reservation.repository.ReservationRepository;
@@ -14,17 +16,20 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
+import org.springframework.transaction.support.TransactionTemplate;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.wait.strategy.WaitAllStrategy;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.shaded.org.awaitility.Awaitility;
 
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -33,6 +38,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+@EnableAsync
 @SpringBootTest
 @ActiveProfiles("test")
 @AutoConfigureMockMvc
@@ -52,6 +58,13 @@ class ReservationControllerTest {
 
     @Autowired
     private ReservationRepository reservationRepository;
+
+    @Autowired
+    private NotificationService notificationService;
+
+    @Autowired
+    private TransactionTemplate transactionTemplate;
+
 
     private String token;
     private Member loginedMember;
@@ -104,16 +117,31 @@ class ReservationControllerTest {
     @Test
     @DisplayName("수강 신청 - 성공 - SSE 이벤트 수신")
     void reserve() throws Exception {
-        Long courseId = 1L;
+        Long courseId = 2L;
 
-        mvc.perform(post("/api/reserve?courseId=%d".formatted(courseId))
-                        .header("Authorization", "Bearer " + token))
-                .andExpect(status().isOk());
-
+        // 나의 트랜잭션으로 묶여 실행되고, 끝나면 즉시 커밋
+        transactionTemplate.execute(status -> {
+            try{
+                mvc.perform(post("/api/reserve?courseId=%d".formatted(courseId))
+                                .header("Authorization", "Bearer " + token))
+                        .andExpect(status().isOk());
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+            return null;
+        });
         Awaitility.await().atMost(10, TimeUnit.SECONDS).untilAsserted(() -> {
             Course course = courseService.findById(courseId);
+            // DB 조회
             Reservation reservation = reservationRepository.findByStudentAndCourse(loginedMember, course).get();
             assertThat(reservation.getStatus()).isEqualTo(ReservationStatus.COMPLETED);
+
+            // RedisStream 확인
+            List<NotificationDto> events = notificationService.getNotifications(loginedMember.getId());
+            NotificationDto event = events.get(events.size() - 1);  // 최신 이벤트
+            assertThat(event.getStatus()).isEqualTo(ReservationStatus.COMPLETED);
+            assertThat(event.getMessage()).isEqualTo("수강 신청이 성공하였습니다.");
+            assertThat(event.getCourseTitle()).isEqualTo(course.getTitle());
         });
     }
 
