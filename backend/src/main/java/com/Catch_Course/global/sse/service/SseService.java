@@ -40,16 +40,13 @@ public class SseService {
         });
 
         // 연결이 생성되었을 때, 503 Service Unavailable 방지를 위해 더미 데이터 전송
-        sendDummyEvent(memberId, "connected", "SSE connection established.");
+        sendToClient(memberId, "connected", "SSE connection established.");
 
         return emitter;
     }
 
     // 이벤트 전송
     public void sendToClient(Long memberId, String eventName, Object data) {
-        // 메세지 저장
-        notificationService.saveNotification(memberId, data);
-
         // 채널이 열려있다면, 이벤트 전송
         SseEmitter emitter = this.emitters.get(memberId);
         if (emitter != null) {
@@ -63,21 +60,6 @@ public class SseService {
             }
         } else {
             log.warn("No SseEmitter found for memberId: {}", memberId);
-        }
-    }
-
-    // 실제 저장하지 않는 더미 이벤트
-    private void sendDummyEvent(Long memberId, String eventName, Object data) {
-        SseEmitter emitter = this.emitters.get(memberId);
-        if (emitter != null) {
-            try {
-                emitter.send(SseEmitter.event()
-                        .name(eventName)
-                        .data(data));
-            } catch (IOException e) {
-                log.error("Failed to send dummy event to memberId: {}", memberId, e);
-                this.emitters.remove(memberId);
-            }
         }
     }
 }

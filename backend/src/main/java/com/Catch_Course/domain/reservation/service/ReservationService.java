@@ -4,8 +4,9 @@ import com.Catch_Course.domain.course.entity.Course;
 import com.Catch_Course.domain.course.repository.CourseRepository;
 import com.Catch_Course.domain.member.entity.Member;
 import com.Catch_Course.domain.member.repository.MemberRepository;
-import com.Catch_Course.domain.reservation.dto.ReservationDto;
 import com.Catch_Course.domain.notification.dto.NotificationDto;
+import com.Catch_Course.domain.notification.service.NotificationService;
+import com.Catch_Course.domain.reservation.dto.ReservationDto;
 import com.Catch_Course.domain.reservation.entity.DeletedHistory;
 import com.Catch_Course.domain.reservation.entity.Reservation;
 import com.Catch_Course.domain.reservation.entity.ReservationStatus;
@@ -39,6 +40,7 @@ public class ReservationService {
     private final ReservationProducer reservationProducer;
     private final ReservationDeletedProducer reservationDeletedProducer;
     private final DeleteHistoryRepository deleteHistoryRepository;
+    private final NotificationService notificationService;
     private final SseService sseService;
 
     public Reservation addToQueue(Member member, Long courseId) {
@@ -125,6 +127,7 @@ public class ReservationService {
                 reservation.setStatus(ReservationStatus.FAILED);
                 reservationRepository.save(reservation);
                 NotificationDto notificationDto = new NotificationDto(reservation,"수강 신청 실패: 정원이 마감되었습니다.");
+                notificationService.saveNotification(memberId, notificationDto);
                 sseService.sendToClient(memberId,"ReservationResult", notificationDto);
                 return;
             }
@@ -136,6 +139,7 @@ public class ReservationService {
             reservation.setStatus(ReservationStatus.COMPLETED);
             NotificationDto notificationDto = new NotificationDto(reservation,"수강 신청이 성공하였습니다.");
             sseService.sendToClient(memberId,"ReservationResult", notificationDto);
+            notificationService.saveNotification(memberId, notificationDto);
             reservationRepository.save(reservation);
         }catch (ServiceException e) {
             NotificationDto notificationDto = new NotificationDto(ReservationStatus.FAILED,"수강 신청 처리 중 오류가 발생했습니다. "+ e.getMessage());

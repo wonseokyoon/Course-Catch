@@ -1,6 +1,7 @@
 package com.Catch_Course.domain.notification.controller;
 
 import com.Catch_Course.domain.member.entity.Member;
+import com.Catch_Course.domain.notification.dto.NotificationDto;
 import com.Catch_Course.domain.notification.service.NotificationService;
 import com.Catch_Course.global.Rq;
 import com.Catch_Course.global.dto.RsData;
@@ -38,7 +39,7 @@ public class NotificationController {
     @GetMapping("event")
     public RsData<?> getEvent() {
         Member member = rq.getDummyMember();
-        List<Object> events = notificationService.getNotifications(member.getId());
+        List<NotificationDto> events = notificationService.getNotifications(member.getId());
 
         return new RsData<>(
                 "200-1",

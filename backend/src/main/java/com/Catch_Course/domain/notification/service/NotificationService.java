@@ -27,7 +27,7 @@ public class NotificationService {
     private static final Duration EXPIRE = Duration.ofHours(12);
 
     // 알림 저장
-    public void saveNotification(Long memberId, Object data) {
+    public void saveNotification(Long memberId, NotificationDto data) {
 
         String key = KEY_PREFIX + memberId;
 
@@ -43,7 +43,7 @@ public class NotificationService {
         }
     }
 
-    public List<Object> getNotifications(Long memberId) {
+    public List<NotificationDto> getNotifications(Long memberId) {
 
         String key = KEY_PREFIX + memberId;
         List<MapRecord<String, Object, Object>> records = redisTemplate.opsForStream().range(key, Range.unbounded());
