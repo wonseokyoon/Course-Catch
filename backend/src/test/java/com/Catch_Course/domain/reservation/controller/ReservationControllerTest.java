@@ -20,6 +20,7 @@ import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
 import org.testcontainers.containers.GenericContainer;
@@ -29,10 +30,14 @@ import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.utility.DockerImageName;
 
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.List;
+import java.util.function.Supplier;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.*;
+import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -62,6 +67,9 @@ class ReservationControllerTest {
     @Autowired
     private ReservationTestHelper reservationTestHelper;
 
+    @MockitoBean
+    private Supplier<ZonedDateTime> clockSupplier;
+
     private String token;
     private Member loginedMember;
     private Member loginedMember2;
@@ -90,6 +98,7 @@ class ReservationControllerTest {
     void setUp() {
         loginedMember = memberService.findByUsername("user1").get();
         token = memberService.getAuthToken(loginedMember);
+        when(clockSupplier.get()).thenAnswer(invocation -> ZonedDateTime.now(ZoneId.of("Asia/Seoul")));
     }
 
     @AfterEach
@@ -304,4 +313,24 @@ class ReservationControllerTest {
                 .andExpect(jsonPath("$.msg").value("수강신청 이력이 없습니다."))
         ;
     }
+
+    @Test
+    @DisplayName("수강신청 실패 - 지정 시간 이외에 신청")
+    void reserve5() throws Exception {
+        Long courseId = 1L;
+        // 고정 시간
+        ZonedDateTime fixedTime = ZonedDateTime.of(2025, 8, 12, 6, 0, 0, 0, ZoneId.of("Asia/Seoul"));
+        when(clockSupplier.get()).thenReturn(fixedTime);
+
+        ResultActions resultActions = mvc.perform(
+                post("/api/reserve?courseId=%d".formatted(courseId))
+                        .header("Authorization", "Bearer " + token)
+        ).andDo(print());
+
+        resultActions
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value("403-1"))
+                .andExpect(jsonPath("$.msg").value("수강 신청 가능한 시간이 아닙니다. (매일 09:00 ~ 09:59)"));
+    }
+
 }

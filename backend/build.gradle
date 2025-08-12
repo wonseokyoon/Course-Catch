@@ -68,6 +68,9 @@ dependencies {
 
 	testAnnotationProcessor 'org.projectlombok:lombok'
 	testImplementation 'org.awaitility:awaitility'
+	implementation 'org.springframework.boot:spring-boot-starter-aop'
+	testImplementation 'org.mockito:mockito-inline:5.2.0'
+
 }
 
 tasks.named('test') {
