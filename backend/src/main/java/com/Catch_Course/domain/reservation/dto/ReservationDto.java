@@ -24,4 +24,5 @@ public class ReservationDto {
         this.status = reservation.getStatus().toString();
         this.createdDate = reservation.getCreatedDate();
     }
+
 }
