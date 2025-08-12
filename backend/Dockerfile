@@ -7,7 +7,7 @@ COPY . .
 RUN chmod +x ./gradlew
 RUN ./gradlew build
 
-FROM openjdk:21-jre-slim
+FROM eclipse-temurin:21-jre-focal
 
 WORKDIR /app
 COPY --from=builder /app/build/libs/*.jar app.jar
