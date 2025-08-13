@@ -1,10 +1,7 @@
-# docker-compose-prod.yml
-version: '3.8'
-
 services:
-  mysql-db:
+  mysql-db-prod:
     image: mysql:8.0
-    container_name: mysql-db
+    container_name: mysql-db-prod
     restart: always
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
@@ -12,65 +9,65 @@ services:
     ports:
       - "3307:3306"
     volumes:
-      - mysql_data:/var/lib/mysql
+      - mysql_prod_data:/var/lib/mysql
     networks:
-      - course-network
+      - prod-network
 
-  redis:
+  redis-prod:
     image: redis:latest
-    container_name: redis
+    container_name: redis-prod
     restart: always
     ports:
-      - "6379:6379"
+      - "6380:6379"
     networks:
-      - course-network
+      - prod-network
 
-  zookeeper:
+  zookeeper-prod:
     image: confluentinc/cp-zookeeper:7.5.0
-    container_name: zookeeper
+    container_name: zookeeper-prod
     ports:
-      - "2181:2181"
+      - "2182:2181"
     environment:
       ZOOKEEPER_CLIENT_PORT: 2181
       ZOOKEEPER_TICK_TIME: 2000
     networks:
-      - course-network
+      - prod-network
 
-  kafka:
+  kafka-prod:
     image: confluentinc/cp-kafka:7.5.0
-    container_name: kafka
+    container_name: kafka-prod
     ports:
-      - "9092:9092"
+      - "9093:9092"
     depends_on:
-      - zookeeper
+      - zookeeper-prod
     environment:
       KAFKA_BROKER_ID: 1
-      KAFKA_ZOOKEEPER_CONNECT: 'zookeeper:2181'
+      KAFKA_ZOOKEEPER_CONNECT: 'zookeeper-prod:2181'
       KAFKA_LISTENERS: INTERNAL://0.0.0.0:29092,EXTERNAL://0.0.0.0:9092
-      KAFKA_ADVERTISED_LISTENERS: INTERNAL://kafka:29092,EXTERNAL://localhost:9092
+      KAFKA_ADVERTISED_LISTENERS: INTERNAL://kafka-prod:29092,EXTERNAL://localhost:9093
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT
       KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
     networks:
-      - course-network
+      - prod-network
 
-  kafka-ui:
+  kafka-ui-prod:
     image: provectuslabs/kafka-ui:latest
-    container_name: kafka-ui
+    container_name: kafka-ui-prod
     ports:
       - "9000:8080"
     restart: always
     environment:
       KAFKA_CLUSTERS_0_NAME: prod-kafka-cluster
-      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:29092
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka-prod:29092
     depends_on:
-      - kafka
+      - kafka-prod
     networks:
-      - course-network
+      - prod-network
 
 networks:
-  course-network:
+  prod-network:
     driver: bridge
 
 volumes:
-  mysql_data:
+  mysql_prod_data:
