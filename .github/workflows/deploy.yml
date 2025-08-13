@@ -47,7 +47,8 @@ jobs:
         uses: docker/setup-buildx-action@v2
       
       - name: Run tests with Gradle
-        run: ./gradlew test
+        # CI 환경에서 빌드 안정성을 높이기 위해 Gradle 데몬을 사용하지 않습니다.
+        run: ./gradlew test --no-daemon
 
   # 2. 릴리스 : 모든 이벤트(push, pull_request)에서 태그와 릴리스를 생성
   makeTagAndRelease:
