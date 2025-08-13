@@ -18,7 +18,7 @@ import lombok.experimental.SuperBuilder;
 @SuperBuilder
 // 중복 신청 방지
 @Table(uniqueConstraints = {
-        @UniqueConstraint(columnNames = {"member_id","course_id"})
+        @UniqueConstraint(columnNames = {"student_id","course_id"})
 })
 public class Reservation extends BaseTime {
 
