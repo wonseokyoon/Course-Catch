@@ -66,11 +66,16 @@ dependencies {
 	// kafka
 	implementation 'org.springframework.kafka:spring-kafka'
 
+	// 테스트
 	testAnnotationProcessor 'org.projectlombok:lombok'
 	testImplementation 'org.awaitility:awaitility'
-	implementation 'org.springframework.boot:spring-boot-starter-aop'
 	testImplementation 'org.mockito:mockito-inline:5.2.0'
 
+	// 시간 제한
+	implementation 'org.springframework.boot:spring-boot-starter-aop'
+
+	// mysql
+	runtimeOnly 'com.mysql:mysql-connector-j'
 }
 
 tasks.named('test') {
