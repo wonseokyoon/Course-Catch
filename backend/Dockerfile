@@ -1,18 +1,36 @@
-# Stage 1: Build the application
-FROM openjdk:21-jdk-slim AS builder
-WORKDIR /app
-COPY . .
-RUN chmod +x ./gradlew
-RUN ./gradlew clean build --no-daemon -x test
+# 첫 번째 스테이지: 빌드 스테이지
+FROM gradle:jdk-21-and-23-graal-jammy AS builder
 
-# Stage 2: Create the final image
-FROM eclipse-temurin:21-jre
+# 작업 디렉토리 설정
 WORKDIR /app
 
-COPY --from=builder /app/build/libs/*-SNAPSHOT.jar app.jar
+# 소스 코드와 Gradle 래퍼 복사
+COPY build.gradle.kts .
+COPY settings.gradle.kts .
 
-EXPOSE 8080
+# Gradle 래퍼에 실행 권한 부여
+RUN gradle wrapper
 
-# server.address=0.0.0.0 를 추가하여 컨테이너 외부의 모든 연결을 허용하도록 강제합니다.
-# 이것이 ERR_CONNECTION_REFUSED 문제를 해결할 핵심적인 수정입니다.
-ENTRYPOINT ["java", "-Dserver.address=0.0.0.0", "-jar", "app.jar"]
+# 종속성 설치
+RUN ./gradlew dependencies --no-daemon
+
+# 소스 코드 복사
+COPY src src
+
+# 애플리케이션 빌드
+RUN ./gradlew build --no-daemon
+
+# 이후 명령어가 편하도록 불필요한 파일 삭제
+RUN rm -rf /app/build/libs/*-plain.jar
+
+# 두 번째 스테이지: 실행 스테이지
+FROM container-registry.oracle.com/graalvm/jdk:23
+
+# 작업 디렉토리 설정
+WORKDIR /app
+
+# 첫 번째 스테이지에서 빌드된 JAR 파일 복사
+COPY --from=builder /app/build/libs/*.jar app.jar
+
+# 실행할 JAR 파일 지정
+ENTRYPOINT ["java", "-jar", "-Dspring.profiles.active=prod", "app.jar"]
