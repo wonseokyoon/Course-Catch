@@ -10,24 +10,10 @@ spring:
     active: dev
     include: secret
 
-  datasource:
-    url: jdbc:h2:./db_dev;MODE=MySQL
-    username: sa
-    password:
-    driver-class-name: org.h2.Driver
-    hikari:
-      auto-commit: false
-
   jpa:
     open-in-view: false
-    hibernate:
-      ddl-auto: update
-    show-sql: false
     properties:
       hibernate:
-        format_sql: true
-        highlight_sql: true
-        use_sql_comments: true
         default_batch_fetch_size: 100
 
   security:
@@ -35,12 +21,13 @@ spring:
       client:
         registration:
           kakao:
-            clientId: ON_SECRET
+            provider: kakao
             scope: profile_nickname, profile_image
             client-name: Kakao
             authorization-grant-type: authorization_code
             redirect-uri: http://localhost:8080/login/oauth2/code/kakao
           google:
+            provider: google
             scope:
               - profile
               - email
@@ -51,17 +38,17 @@ spring:
             token-uri: https://kauth.kakao.com/oauth/token
             user-info-uri: https://kapi.kakao.com/v2/user/me
             user-name-attribute: id
+
   mail:
     host: smtp.gmail.com
     port: 587
-    username: your_email@gmail.com
-    password: your_app_password
     properties:
       mail:
         smtp:
           auth: true
           starttls:
             enable: true
+
   data:
     redis:
       host: localhost
@@ -71,39 +58,21 @@ spring:
     bootstrap-servers: localhost:9092
     producer:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
-      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer # DTO 직렬화를 위해 JsonSerializer 사용
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
     consumer:
-      group-id: course # Consumer Group ID
+      group-id: course
       key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
       value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
       properties:
-        spring.json.trusted.packages: "*" # 모든 패키지의 클래스를 역직렬화 허용
+        spring.json.trusted.packages: "*"
       auto-offset-reset: earliest
-
-  producer:
-    # Kafka 클러스터에 대한 주소
-    bootstrap-servers: localhost:9092
-
-    # Kafka 메시지의 key를 직렬화할 때 사용할 클래스를 지정
-    key-serializer: org.apache.kafka.common.serialization.StringSerializer
-
-    # Kafka 메시지의 value를 직렬화할 때 사용할 클래스를 지정
-    value-serializer: org.apache.kafka.common.serialization.StringSerializer
-
-logging:
-  level:
-    org.hibernate.SQL: DEBUG
-    org.hibernate.orm.jdbc.bind: TRACE
-    org.hibernate.orm.jdbc.extract: TRACE
-    org.springframework.transaction.interceptor: TRACE
 
 custom:
   jwt:
-    secret-key: abcdefghijklmnopqrstuvwxyz1234567890abcdefghijklmnopqrstuvwxyz1234567890
     expire-seconds: "#{60 * 60}"
-    refresh-expire-seconds: "#{60 * 60 * 24 * 7}"   # 1주일
+    refresh-expire-seconds: "#{60 * 60 * 24 * 7}"
 
 app:
   registration-time:
-    start: "07:00"                # 시작 시간 (HH:mm 형식)
-    duration-in-minutes: 721
+    start: "09:00"
+    duration-in-minutes: 900
