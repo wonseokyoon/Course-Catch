@@ -63,7 +63,7 @@ jobs:
           timeout_seconds: 600
           max_attempts: 3
           retry_wait_seconds: 15
-          command: ./gradlew test --no-daemon
+          command: cd backend && ./gradlew test --no-daemon
 
       - name: Upload test reports
         if: failure()
