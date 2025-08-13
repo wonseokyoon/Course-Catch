@@ -39,12 +39,6 @@ public class CourseController {
     ) {
 
         Page<Course> coursePage = courseService.getItems(page,pageSize,keywordType,keyword);
-        System.out.println("========== Course Page Info ==========");
-        System.out.println("Total Elements: " + coursePage.getTotalElements());
-        System.out.println("Total Pages: " + coursePage.getTotalPages());
-        System.out.println("Has Content: " + coursePage.hasContent());
-        System.out.println("Content: " + coursePage.getContent());
-        System.out.println("====================================");
 
         if(coursePage.isEmpty()) throw new ServiceException("404-2","일치하는 강의가 없습니다.");
 
