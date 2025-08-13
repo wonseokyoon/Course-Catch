@@ -4,6 +4,7 @@ import com.Catch_Course.domain.course.controller.KeywordType;
 import com.Catch_Course.domain.course.entity.Course;
 import com.Catch_Course.domain.course.repository.CourseRepository;
 import com.Catch_Course.domain.member.entity.Member;
+import com.Catch_Course.global.exception.ServiceException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -71,5 +72,10 @@ public class CourseService {
         course.setTitle(title);
         course.setContent(content);
         course.setCapacity(capacity);
+    }
+
+    public Course findById(long id) {
+        return courseRepository.findById(id)
+                .orElseThrow(() -> new ServiceException("404-1","존재하지 않는 강의입니다."));
     }
 }

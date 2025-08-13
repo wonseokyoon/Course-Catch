@@ -37,7 +37,7 @@ public class BaseInitData {
             return;
         }
 
-        for (int i = 1; i <= 50; i++) {
+        for (int i = 1; i <= 100; i++) {
             memberService.join("user%d".formatted(i), "user%d1234".formatted(i), "유저%d".formatted(i), "user%d@example.com".formatted(i), "");
         }
 
@@ -64,5 +64,6 @@ public class BaseInitData {
             Member tempUser = memberService.findByUsername("user%d".formatted(userId)).get();
             courseService.write(tempUser, "강의 제목 %d".formatted(i), "강의 내용 %d".formatted(i), 50);
         }
+        courseService.write(user2, "인기 폭발123 강의", "늦으면 없213다", 1);
     }
 }
