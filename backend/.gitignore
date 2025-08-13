@@ -43,3 +43,4 @@ db_dev.trace.db
 ### yml
 /src/main/resources/application-secret.yml
 apiV1.json
+.env
