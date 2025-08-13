@@ -26,4 +26,9 @@ public interface CourseRepository extends JpaRepository<Course, Long> {
     @Lock(LockModeType.PESSIMISTIC_WRITE)   // 비관적 Lock, FOR UPDATE 전부 차단
     @Query("select c from Course c where c.id= :id")
     Optional<Course> findByIdWithPessimisticLock(@Param("id") Long id);
+
+    // id로 검색
+    @EntityGraph(attributePaths = {"instructor"})
+    @Override
+    Optional<Course> findById(Long id);
 }

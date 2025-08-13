@@ -56,8 +56,8 @@ public class MemberService {
         return memberRepository.findByUsername(username);
     }
 
-    public Optional<Member> findById(long id) {
-        return memberRepository.findById(id);
+    public Optional<Member> findById(long memberId) {
+        return memberRepository.findById(memberId);
     }
 
     // accessToken + refreshToken
@@ -155,10 +155,4 @@ public class MemberService {
         member.setDeleteFlag(false);
         return memberRepository.save(member);
     }
-
-    // 테스트용 하드 삭제
-    public void deleteMember(Member member) {
-        memberRepository.delete(member);
-    }
-
 }
