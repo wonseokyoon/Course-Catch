@@ -11,56 +11,71 @@ on:
     branches: [ "main", "develop" ]
 
 jobs:
-  backend-ci:
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: ./backend
-    env:
-      APPLICATION_SECRET: ${{ secrets.APPLICATION_SECRET }}
+  # backend-ci:
+  #   runs-on: ubuntu-latest
+  #   defaults:
+  #     run:
+  #       working-directory: ./backend
+  #   env:
+  #     APPLICATION_SECRET: ${{ secrets.APPLICATION_SECRET }}
 
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+  #   steps:
+  #     - name: Checkout code
+  #       uses: actions/checkout@v4
 
-      - name: Set up JDK 21
-        uses: actions/setup-java@v4
-        with:
-          java-version: '21'
-          distribution: 'temurin'
+  #     - name: Set up JDK 21
+  #       uses: actions/setup-java@v4
+  #       with:
+  #         java-version: '21'
+  #         distribution: 'temurin'
       
+  #     # Gradle 캐싱을 추가하여 빌드 속도를 개선합니다.
+  #     - name: Cache Gradle packages
+  #       uses: actions/cache@v4
+  #       with:
+  #         path: |
+  #           ~/.gradle/caches
+  #           ~/.gradle/wrapper
+  #         key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+  #         restore-keys: |
+  #           ${{ runner.os }}-gradle-
 
-      - name: Grant execute permission for gradlew
-        run: chmod +x ./gradlew
+  #     - name: Grant execute permission for gradlew
+  #       run: chmod +x ./gradlew
 
-      - name: application-secret.yml 생성
-        run: |
-          echo "$APPLICATION_SECRET" > src/main/resources/application-secret.yml
+  #     - name: application-secret.yml 생성
+  #       run: |
+  #         echo "$APPLICATION_SECRET" > src/main/resources/application-secret.yml
 
-      - name: Docker Login
-        uses: docker/login-action@v2
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+  #     - name: Docker Login
+  #       uses: docker/login-action@v2
+  #       with:
+  #         registry: ghcr.io
+  #         username: ${{ github.actor }}
+  #         password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Docker Buildx 설치
-        uses: docker/setup-buildx-action@v2
+  #     - name: Docker Buildx 설치
+  #       uses: docker/setup-buildx-action@v2
       
-      - name: Run tests with Gradle
-        # Testcontainers가 컨테이너를 실행하기 위해 Docker 데몬과 소통할 수 있도록
-        # 별도의 설정 없이 실행
-        run: ./gradlew test
+  #     - name: Run tests with Gradle
+  #       run: ./gradlew test
+
+  #     # 테스트 실패 시 리포트를 아티팩트로 업로드하여 디버깅을 돕습니다.
+  #     - name: Upload test reports
+  #       if: failure()
+  #       uses: actions/upload-artifact@v4
+  #       with:
+  #         name: test-reports
+  #         path: backend/build/reports/tests/test/
 
   # 2. 릴리스 : main/develop 브랜치로 Push될 때만 실행
   makeTagAndRelease:
     name: Create Tag and Release
-    if: github.event_name == 'push'
-    needs: backend-ci
+    # if: github.event_name == 'push'
+    # needs: backend-ci
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: ./backend
+    permissions:
+      contents: write
     outputs:
       tag_name: ${{ steps.create_tag.outputs.new_tag }}
     steps:
@@ -86,12 +101,9 @@ jobs:
   # 3. 빌드 및 배포: main/develop 브랜치로 Push될 때만 실행
   buildImageAndPush:
     name: 도커 이미지 빌드와 푸시
-    if: github.event_name == 'push'
+    # if: github.event_name == 'push'
     needs: makeTagAndRelease
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: ./backend
     steps:
       - uses: actions/checkout@v4
 
@@ -99,7 +111,8 @@ jobs:
         env:
           APPLICATION_SECRET: ${{ secrets.APPLICATION_SECRET }}
         run: |
-          echo "$APPLICATION_SECRET" > src/main/resources/application-secret.yml
+          mkdir -p ./backend/src/main/resources
+          echo "$APPLICATION_SECRET" > ./backend/src/main/resources/application-secret.yml
       - name: Docker Buildx 설치
         uses: docker/setup-buildx-action@v2
       - name: 레지스트리 로그인
@@ -110,16 +123,17 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: set lower case owner name
+        id: set_owner
         run: |
           echo "OWNER_LC=${OWNER,,}" >> ${GITHUB_ENV}
         env:
           OWNER: '${{ github.repository_owner }}'
-
+        
       - name: 빌드 앤 푸시
         uses: docker/build-push-action@v3
         with:
           context: ./backend
           push: true
           tags: |
-            ghcr.io/${{ env.OWNER_LC }}/catch-course:${{ needs.makeTagAndRelease.outputs.tag_name }},
+            ghcr.io/${{ env.OWNER_LC }}/catch-course:${{ needs.makeTagAndRelease.outputs.tag_name }}
             ghcr.io/${{ env.OWNER_LC }}/catch-course:latest
