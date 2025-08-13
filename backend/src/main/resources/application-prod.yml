@@ -1,0 +1,23 @@
+spring:
+  datasource:
+    url: jdbc:mysql://mysql-db-prod:3306/coursecatch_db?useSSL=false&serverTimezone=Asia/Seoul&characterEncoding=UTF-8&allowPublicKeyRetrieval=true
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+
+  data:
+    redis:
+      host: redis-prod
+      port: 6379
+
+  kafka:
+    bootstrap-servers: kafka-prod:29092
+
+logging:
+  level:
+    com.Catch_Course: INFO
