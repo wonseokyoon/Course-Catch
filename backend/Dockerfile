@@ -4,8 +4,8 @@ FROM openjdk:21-jdk-slim AS builder
 WORKDIR /app
 COPY . .
 RUN chmod +x ./gradlew
-# gradlew 빌드 시 발생하는 불필요한 로그를 줄이고 빌드 속도를 개선하기 위해 --no-daemon 옵션을 추가할 수 있습니다.
-RUN ./gradlew build --no-daemon
+# CI 단계에서 이미 테스트를 수행했으므로, Docker 빌드 시에는 -x test 옵션으로 테스트를 건너뜁니다.
+RUN ./gradlew build --no-daemon -x test
 
 # Stage 2: Create the final image using JRE
 FROM eclipse-temurin:21-jre
