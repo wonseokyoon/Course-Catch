@@ -1,30 +1,32 @@
 # 첫 번째 스테이지: 빌드 스테이지
-FROM gradle:jdk-21-and-23-graal-jammy AS builder
+FROM openjdk:21-jdk-slim AS builder
 
 # 작업 디렉토리 설정
 WORKDIR /app
 
 # 소스 코드와 Gradle 래퍼 복사
-COPY build.gradle.kts .
-COPY settings.gradle.kts .
+COPY build.gradle .
+COPY settings.gradle .
+COPY gradlew .
+COPY gradle ./gradle
 
 # Gradle 래퍼에 실행 권한 부여
-RUN gradle wrapper
+RUN chmod +x ./gradlew
 
 # 종속성 설치
 RUN ./gradlew dependencies --no-daemon
 
 # 소스 코드 복사
-COPY src src
+COPY src ./src
 
 # 애플리케이션 빌드
-RUN ./gradlew build --no-daemon
+RUN ./gradlew clean build --no-daemon -x test
 
 # 이후 명령어가 편하도록 불필요한 파일 삭제
 RUN rm -rf /app/build/libs/*-plain.jar
 
 # 두 번째 스테이지: 실행 스테이지
-FROM container-registry.oracle.com/graalvm/jdk:23
+FROM eclipse-temurin:21-jre
 
 # 작업 디렉토리 설정
 WORKDIR /app
