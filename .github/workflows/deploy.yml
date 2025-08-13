@@ -72,7 +72,7 @@ jobs:
   makeTagAndRelease:
     name: Create Tag and Release
     # if: github.event_name == 'push'
-    needs: backend-ci
+    # needs: backend-ci
     runs-on: ubuntu-latest
     permissions:
       contents: write
