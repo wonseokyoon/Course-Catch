@@ -107,6 +107,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: 빌드 컨텍스트 확인 (backend 폴더 내용)
+        run: |
+          echo "--- Docker 빌드에 사용될 backend 폴더의 전체 파일 목록입니다 ---"
+          ls -laR ./backend
+
       - name: application-secret.yml 생성
         env:
           APPLICATION_SECRET: ${{ secrets.APPLICATION_SECRET }}
