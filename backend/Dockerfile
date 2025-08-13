@@ -4,7 +4,6 @@ FROM openjdk:21-jdk-slim AS builder
 WORKDIR /app
 
 # 1. 빌드에 필요한 최소한의 파일만 복사하여 의존성 레이어를 분리합니다.
-# 이렇게 하면 소스 코드가 변경되어도 매번 의존성을 새로 받지 않아 빌드 속도가 향상됩니다.
 COPY build.gradle settings.gradle gradlew ./
 COPY gradle ./gradle
 
@@ -14,8 +13,9 @@ RUN ./gradlew dependencies
 # 3. 나머지 소스 코드를 복사합니다.
 COPY src ./src
 
-# 4. CI 단계에서 이미 테스트를 수행했으므로, 테스트를 제외하고 애플리케이션을 빌드합니다.
-RUN ./gradlew build --no-daemon -x test
+# 4. 'clean'을 추가하여 이전 빌드 결과를 삭제하고, 테스트를 제외한 후 새로 빌드합니다.
+# 이것이 404 오류를 해결할 핵심적인 수정입니다.
+RUN ./gradlew clean build --no-daemon -x test
 
 # Stage 2: Create the final, minimal image for deployment
 FROM eclipse-temurin:21-jre
