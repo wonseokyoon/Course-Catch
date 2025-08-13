@@ -29,6 +29,17 @@ jobs:
           java-version: '21'
           distribution: 'temurin'
       
+      # Gradle 캐싱을 추가하여 빌드 속도를 개선합니다.
+      - name: Cache Gradle packages
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-
+
       - name: Grant execute permission for gradlew
         run: chmod +x ./gradlew
 
@@ -49,6 +60,14 @@ jobs:
       - name: Run tests with Gradle
         # CI 환경에서 빌드 안정성을 높이기 위해 Gradle 데몬을 사용하지 않습니다.
         run: ./gradlew test --no-daemon
+
+      # 테스트 실패 시 리포트를 아티팩트로 업로드하여 디버깅을 돕습니다.
+      - name: Upload test reports
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-reports
+          path: backend/build/reports/tests/test/
 
   # 2. 릴리스 : 모든 이벤트(push, pull_request)에서 태그와 릴리스를 생성
   makeTagAndRelease:
