@@ -1,4 +1,3 @@
-# application-test.yml
 spring:
   datasource:
     url: jdbc:h2:mem:db_test;MODE=MySQL
@@ -17,7 +16,10 @@ spring:
 
   mail:
     host: localhost
-    port: 25
+
+custom:
+  jwt:
+    secret-key: VEVTVF9TRUNSRVRfS0VZX0ZPUl9BVVRPTUFURURfVEVTVFM=
 
 logging:
   level:

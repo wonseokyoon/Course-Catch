@@ -1,5 +1,3 @@
-# application-dev.yml
-
 spring:
   datasource:
     url: jdbc:h2:./db_dev;MODE=MySQL
@@ -15,15 +13,11 @@ spring:
       hibernate:
         format_sql: true
         highlight_sql: true
-
-  data:
-    redis:
-      host: localhost
-      port: 6379
-  kafka:
-    bootstrap-servers: localhost:9092
+        use_sql_comments: true
 
 logging:
   level:
     org.hibernate.SQL: DEBUG
     org.hibernate.orm.jdbc.bind: TRACE
+    org.hibernate.orm.jdbc.extract: TRACE
+    org.springframework.transaction.interceptor: TRACE
