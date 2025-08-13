@@ -54,8 +54,8 @@ public class CourseService {
         }
     }
 
-    public Optional<Course> getItem(long id) {
-        return courseRepository.findById(id);
+    public Optional<Course> getItem(long courseId) {
+        return courseRepository.findById(courseId);
     }
 
     public long count() {
@@ -74,8 +74,8 @@ public class CourseService {
         course.setCapacity(capacity);
     }
 
-    public Course findById(long id) {
-        return courseRepository.findById(id)
+    public Course findById(long courseId) {
+        return courseRepository.findById(courseId)
                 .orElseThrow(() -> new ServiceException("404-1","존재하지 않는 강의입니다."));
     }
 }
