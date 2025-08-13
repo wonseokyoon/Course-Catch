@@ -9,12 +9,15 @@ spring:
     hibernate:
       ddl-auto: update
     show-sql: false
+
   data:
     redis:
-      host: redis
+      host: redis-prod
       port: 6379
+
   kafka:
-    bootstrap-servers: kafka:29092
+    bootstrap-servers: kafka-prod:29092
+
 logging:
   level:
     com.Catch_Course: INFO
