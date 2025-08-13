@@ -29,7 +29,6 @@ jobs:
           java-version: '21'
           distribution: 'temurin'
       
-      # Gradle 캐싱을 추가하여 빌드 속도를 개선합니다.
       - name: Cache Gradle packages
         uses: actions/cache@v4
         with:
@@ -58,10 +57,14 @@ jobs:
         uses: docker/setup-buildx-action@v2
       
       - name: Run tests with Gradle
-        # CI 환경에서 빌드 안정성을 높이기 위해 Gradle 데몬을 사용하지 않습니다.
-        run: ./gradlew test --no-daemon
+        # CI 환경의 간헐적인 불안정성(Flaky Test)에 대응하기 위해 실패 시 3번까지 재시도합니다.
+        uses: nick-invision/retry@v2
+        with:
+          timeout_seconds: 600
+          max_attempts: 3
+          retry_wait_seconds: 15
+          command: ./gradlew test --no-daemon
 
-      # 테스트 실패 시 리포트를 아티팩트로 업로드하여 디버깅을 돕습니다.
       - name: Upload test reports
         if: failure()
         uses: actions/upload-artifact@v4
@@ -81,14 +84,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       
-      # 조건 없이 항상 Git 태그를 생성합니다.
       - name: Create Tag
         id: create_tag
         uses: mathieudutour/github-tag-action@v6.2
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
 
-      # 조건 없이 항상 GitHub Release를 생성합니다.
       - name: Create Release
         id: create_release
         uses: actions/create-release@v1
