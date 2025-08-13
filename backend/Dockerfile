@@ -1,38 +1,22 @@
-# 첫 번째 스테이지: 빌드 스테이지
+# Stage 1: Build the application
 FROM openjdk:21-jdk-slim AS builder
-
-# 작업 디렉토리 설정
 WORKDIR /app
 
-# 소스 코드와 Gradle 래퍼 복사
-COPY build.gradle .
-COPY settings.gradle .
-COPY gradlew .
-COPY gradle ./gradle
+# 1. 모든 파일을 복사한 직후, 파일 목록을 출력하여 src 폴더가 있는지 확인합니다.
+COPY . .
+RUN echo "--- 1. 'COPY . .' 실행 후 /app 디렉터리 내용물 ---" && ls -la
 
-# Gradle 래퍼에 실행 권한 부여
 RUN chmod +x ./gradlew
-
-# 종속성 설치
-RUN ./gradlew dependencies --no-daemon
-
-# 소스 코드 복사
-COPY src ./src
-
-# 애플리케이션 빌드
 RUN ./gradlew clean build --no-daemon -x test
 
-# 이후 명령어가 편하도록 불필요한 파일 삭제
-RUN rm -rf /app/build/libs/*-plain.jar
+# 2. 빌드가 완료된 후, 생성된 JAR 파일이 있는지 확인합니다.
+RUN echo "--- 2. 빌드 완료 후 /app/build/libs 디렉터리 내용물 ---" && ls -la /app/build/libs
 
-# 두 번째 스테이지: 실행 스테이지
+# Stage 2: Create the final image
 FROM eclipse-temurin:21-jre
-
-# 작업 디렉토리 설정
 WORKDIR /app
 
-# 첫 번째 스테이지에서 빌드된 JAR 파일 복사
-COPY --from=builder /app/build/libs/*.jar app.jar
+COPY --from=builder /app/build/libs/*-SNAPSHOT.jar app.jar
 
-# 실행할 JAR 파일 지정
-ENTRYPOINT ["java", "-jar", "-Dspring.profiles.active=prod", "app.jar"]
+EXPOSE 8080
+ENTRYPOINT ["java", "-jar", "app.jar"]
