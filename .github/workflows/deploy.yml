@@ -134,6 +134,8 @@ jobs:
         with:
           context: ./backend
           push: true
+          # 이 옵션을 추가하여 Docker 빌드 캐시를 사용하지 않도록 강제합니다.
+          no-cache: true
           tags: |
             ghcr.io/${{ env.OWNER_LC }}/catch-course:${{ needs.makeTagAndRelease.outputs.tag_name }}
             ghcr.io/${{ env.OWNER_LC }}/catch-course:latest
