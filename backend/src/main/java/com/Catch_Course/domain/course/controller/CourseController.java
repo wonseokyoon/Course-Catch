@@ -119,7 +119,8 @@ public class CourseController {
     record WriteReqBody(
             @NotBlank @Length(min = 3) String title,
             @NotBlank @Length(min = 3) String content,
-            @NotNull @Min(1) long capacity
+            @NotNull @Min(1) long capacity,
+            @NotNull @Min(1000) long price
     ) {
     }
 
@@ -130,7 +131,7 @@ public class CourseController {
     public RsData<CourseDto> write(@RequestBody @Valid WriteReqBody body) {
 
         Member dummyMember = rq.getDummyMember();
-        Course course = courseService.write(dummyMember, body.title(), body.content(), body.capacity());
+        Course course = courseService.write(dummyMember, body.title(), body.content(), body.capacity(),body.price());
 
         return new RsData<>(
                 "200-1",
