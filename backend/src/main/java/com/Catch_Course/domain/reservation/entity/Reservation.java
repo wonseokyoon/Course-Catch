@@ -37,4 +37,11 @@ public class Reservation extends BaseTime {
 
     @Column(nullable = false)
     private Long price;
+
+    public Reservation(Member student, Course course, ReservationStatus status, Long price) {
+        this.student = student;
+        this.course = course;
+        this.status = status;
+        this.price = price;
+    }
 }
