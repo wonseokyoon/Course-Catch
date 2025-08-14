@@ -58,6 +58,7 @@ public class ReservationService {
                 .student(member)
                 .course(course)
                 .status(ReservationStatus.WAITING)
+                .price(course.getPrice())
                 .build();
 
         // 메세지 전송

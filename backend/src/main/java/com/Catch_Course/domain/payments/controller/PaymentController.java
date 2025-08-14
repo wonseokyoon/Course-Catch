@@ -25,16 +25,17 @@ public class PaymentController {
     private final Rq rq;
 
 
-    @Operation(summary = "결제 정보 조회")
+    @Operation(summary = "수강신청 정보로 결제 정보 조회")
     @GetMapping()
     public RsData<PaymentDto> getPayment(@RequestParam Long reservationId) {
+
         Member member = rq.getMember(rq.getDummyMember());  // 실제 멤버 객체
 
         PaymentDto paymentDto = paymentService.getPayment(member, reservationId);
 
         return new RsData<>(
                 "200-1",
-                "신청 목록 조회가 완료되었습니다.",
+                "결제 정보 조회가 완료되었습니다.",
                 paymentDto
         );
     }
@@ -42,6 +43,7 @@ public class PaymentController {
     @Operation(summary = "결제 목록 조회")
     @GetMapping()
     public RsData<List<PaymentDto>> getPayments() {
+
         Member member = rq.getMember(rq.getDummyMember());  // 실제 멤버 객체
 
         List<PaymentDto> paymentDtos = paymentService.getPayments(member);
@@ -57,6 +59,7 @@ public class PaymentController {
     @Operation(summary = "결제 생성 및 요청")
     @PostMapping("/request")
     public RsData<PaymentDto> requestPayment(@RequestParam Long reservationId) {
+
         Member member = rq.getMember(rq.getDummyMember());  // 실제 멤버 객체
 
         PaymentDto paymentDto = paymentService.requestPayment(member, reservationId);
@@ -76,6 +79,7 @@ public class PaymentController {
     @Operation(summary = "결제 승인")
     @PostMapping("/confirm")
     public RsData<PaymentDto> confirmPayment(@RequestBody @Valid confirmPaymentReqBody body) {
+
         PaymentDto paymentDto = paymentService.confirmPayment(body.paymentKey, body.orderId, body.amount);
 
         return new RsData<>(

@@ -31,23 +31,23 @@ public class PaymentService {
     private final TossPaymentsService tossPaymentsService;
 
     public PaymentDto getPayment(Member member, Long reservationId) {
+
         // reservation 이력 조회
-        Reservation reservation = reservationRepository.findByIdAndStudent(reservationId,member)
-                .orElseThrow(() -> new ServiceException("404-3","수강신청 이력이 없습니다."));
+        Reservation reservation = reservationRepository.findByIdAndStudentAndStatus(reservationId, member, ReservationStatus.COMPLETED)
+                .orElseThrow(() -> new ServiceException("404-3", "수강신청 이력이 없습니다."));
 
         Payment payment = paymentRepository.findByReservation(reservation)
-                .orElseThrow(() -> new ServiceException("404-5","결제 정보가 없습니다."));
+                .orElseThrow(() -> new ServiceException("404-5", "결제 정보가 없습니다."));
 
         return new PaymentDto(payment);
     }
 
     public List<PaymentDto> getPayments(Member member) {
-        List<Reservation> reservationList = reservationRepository.findByStudent(member);
 
-        List<Payment> payments = paymentRepository.findByReservationIn(reservationList);
+        List<Payment> payments = paymentRepository.findByMemberAndStatus(member, PaymentStatus.PAID);
 
-        if(payments.isEmpty()) {
-            throw new ServiceException("404-5","결제 정보가 없습니다.");
+        if (payments.isEmpty()) {
+            throw new ServiceException("404-5", "결제 정보가 없습니다.");
         }
 
         return payments.stream()
@@ -57,7 +57,8 @@ public class PaymentService {
 
     @Transactional
     public PaymentDto requestPayment(Member member, Long reservationId) {
-        Reservation reservation = reservationService.findByIdAndStudent(reservationId,member);
+
+        Reservation reservation = reservationService.findByIdAndStudent(reservationId, member);
 
         String merchantUid = UUID.randomUUID().toString();
         long amount = reservation.getPrice();
@@ -76,21 +77,35 @@ public class PaymentService {
 
     @Transactional
     public PaymentDto confirmPayment(String paymentKey, String orderId, Long amount) {
+
         Payment payment = paymentRepository.findByMerchantUid(orderId)
-                .orElseThrow(() -> new ServiceException("404-5","결제 정보가 없습니다."));
+                .orElseThrow(() -> new ServiceException("404-5", "결제 정보가 없습니다."));
 
-        if(payment.getStatus() != PaymentStatus.PENDING) {
-            throw new ServiceException("409-2","이미 처리된 결제입니다.");
+        if (payment.getStatus() != PaymentStatus.PENDING) {
+            throw new ServiceException("409-2", "이미 처리된 결제입니다.");
         }
-        if(payment.getAmount() != amount){
-            throw new ServiceException("400-4","결제 금액이 일치하지 않습니다.");
+        if (payment.getAmount() != amount) {
+            throw new ServiceException("400-4", "결제 금액이 일치하지 않습니다.");
         }
+        try{
+            // 최종 승인
+            tossPaymentsService.confirm(paymentKey, orderId, amount);
 
-        tossPaymentsService.confirm(paymentKey,orderId,amount);
+            // 상태 변경
+            payment.setStatus(PaymentStatus.PAID);
+            payment.setPaymentKey(paymentKey);
+            payment.getReservation().setStatus(ReservationStatus.COMPLETED);
+        } catch (ServiceException e) {
+            // 결제 실패
+            // todo: 메세지를 남겨서 후처리
+            log.error("결제 승인 실패: orderId={}, reason={}", orderId, e.getMessage());
 
-        payment.setStatus(PaymentStatus.PAID);
-        payment.setPaymentKey(paymentKey);
-        payment.getReservation().setStatus(ReservationStatus.COMPLETED);
+            payment.setStatus(PaymentStatus.FAILED);
+            throw new ServiceException("500-1", "결제 중 알 수 없는 오류가 발생했습니다.");
+        } finally {
+            // 상태 저장
+            paymentRepository.save(payment);
+        }
 
         return new PaymentDto(paymentRepository.save(payment));
     }
