@@ -26,8 +26,8 @@ public class PaymentController {
 
 
     @Operation(summary = "수강신청 정보로 결제 정보 조회")
-    @GetMapping()
-    public RsData<PaymentDto> getPayment(@RequestParam Long reservationId) {
+    @GetMapping("/{reservationId}")
+    public RsData<PaymentDto> getPayment(@RequestBody Long reservationId) {
 
         Member member = rq.getMember(rq.getDummyMember());  // 실제 멤버 객체
 
