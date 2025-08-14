@@ -19,4 +19,7 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long> 
 
     @EntityGraph(attributePaths = {"course", "student"})
     Page<Reservation> findAllByStudentAndStatus(Member member, ReservationStatus reservationStatus, Pageable pageable);
+
+    @EntityGraph(attributePaths = {"course", "student", "payment"})
+    Optional<Reservation> findByIdAndStudentAndStatus(Long reservationId, Member member, ReservationStatus reservationStatus);
 }

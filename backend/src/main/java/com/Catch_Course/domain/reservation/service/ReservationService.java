@@ -58,6 +58,7 @@ public class ReservationService {
                 .student(member)
                 .course(course)
                 .status(ReservationStatus.WAITING)
+                .price(course.getPrice())
                 .build();
 
         // 메세지 전송
@@ -68,7 +69,7 @@ public class ReservationService {
     private void handleDuplicateReservation(Reservation reservation) {
         ReservationStatus status = reservation.getStatus();
 
-        if (status.equals(ReservationStatus.COMPLETED)) {
+        if (status.equals(ReservationStatus.COMPLETED) || status.equals(ReservationStatus.PENDING)) {
             throw new ServiceException("409-1", "이미 신청한 강의입니다.");
         } else if (status.equals(ReservationStatus.WAITING)) {
             throw new ServiceException("409-3", "이미 대기열에 등록된 신청입니다.");
@@ -108,6 +109,19 @@ public class ReservationService {
         return reservations;
     }
 
+    @Transactional(readOnly = true)
+    public Page<Reservation> getReservationsPending(Member member, int page, int pageSize) {
+        Pageable pageable = PageRequest.of(page - 1, pageSize);
+
+        Page<Reservation> reservations = reservationRepository.findAllByStudentAndStatus(member, ReservationStatus.PENDING, pageable);
+
+        if (reservations.isEmpty()) {
+            throw new ServiceException("404-3", "수강신청 이력이 없습니다.");
+        }
+
+        return reservations;
+    }
+
     /**
      * Kafka Consumer에 의해 호출 될 실제 수강 신청 처리 메서드
      */
@@ -136,7 +150,7 @@ public class ReservationService {
             course.increaseReservation();
             courseRepository.save(course);
 
-            reservation.setStatus(ReservationStatus.COMPLETED);
+            reservation.setStatus(ReservationStatus.PENDING);
             NotificationDto notificationDto = new NotificationDto(reservation,"수강 신청이 성공하였습니다.");
             sseService.sendToClient(memberId,"ReservationResult", notificationDto);
             notificationService.saveNotification(memberId, notificationDto);
@@ -155,4 +169,11 @@ public class ReservationService {
                 .build()
         );
     }
+
+    @Transactional(readOnly = true)
+    public Reservation findByIdAndStudent(Long reservationId, Member member) {
+        return reservationRepository.findByIdAndStudentAndStatus(reservationId,member,ReservationStatus.PENDING)
+                .orElseThrow(() -> new ServiceException("404-3","수강신청 이력이 없습니다."));
+    }
+
 }

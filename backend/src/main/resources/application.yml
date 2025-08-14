@@ -67,11 +67,6 @@ spring:
         spring.json.trusted.packages: "*"
       auto-offset-reset: earliest
 
-custom:
-  jwt:
-    expire-seconds: "#{60 * 60}"
-    refresh-expire-seconds: "#{60 * 60 * 24 * 7}"
-
 app:
   registration-time:
     start: "09:00"

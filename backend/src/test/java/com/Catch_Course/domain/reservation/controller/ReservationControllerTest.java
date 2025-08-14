@@ -138,12 +138,12 @@ class ReservationControllerTest {
         Course awaitCourse = courseService.findById(courseId);
         // DB 조회
         Reservation reservation = reservationRepository.findByStudentAndCourse(loginedMember, awaitCourse).get();
-        assertThat(reservation.getStatus()).isEqualTo(ReservationStatus.COMPLETED);
+        assertThat(reservation.getStatus()).isEqualTo(ReservationStatus.PENDING);
 
         // RedisStream 확인
         List<NotificationDto> events = notificationService.getNotifications(loginedMember.getId());
         NotificationDto event = events.get(events.size() - 1);  // 최신 이벤트
-        assertThat(event.getStatus()).isEqualTo(ReservationStatus.COMPLETED);
+        assertThat(event.getStatus()).isEqualTo(ReservationStatus.PENDING);
         assertThat(event.getMessage()).isEqualTo("수강 신청이 성공하였습니다.");
         assertThat(event.getCourseTitle()).isEqualTo(awaitCourse.getTitle());
     }
@@ -275,7 +275,7 @@ class ReservationControllerTest {
     }
 
     @Test
-    @DisplayName("신청 목록 조회")
+    @DisplayName("수강 목록 조회(결제 대기)")
     void getReservation() throws Exception {
         int page = 1;
         int pageSize = 5;
@@ -285,7 +285,7 @@ class ReservationControllerTest {
         reservationTestHelper.reserveSetUp(loginedMember, course);
 
         ResultActions resultActions = mvc.perform(
-                get("/api/reserve/me?page=%d&pageSize=%d".formatted(page, pageSize))
+                get("/api/reserve/me/pending?page=%d&pageSize=%d".formatted(page, pageSize))
                         .header("Authorization", "Bearer " + token)
         );
 
