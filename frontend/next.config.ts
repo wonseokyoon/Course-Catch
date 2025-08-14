@@ -1,6 +1,16 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // API 요청을 백엔드(localhost:8080)로 전달하기 위한 프록시 설정
+  async rewrites() {
+    return [
+      {
+        source: "/api/:path*",
+        destination: "http://localhost:8080/api/:path*",
+      },
+    ];
+  },
+  // 기존 이미지 설정 유지
   images: {
     dangerouslyAllowSVG: true,
     remotePatterns: [

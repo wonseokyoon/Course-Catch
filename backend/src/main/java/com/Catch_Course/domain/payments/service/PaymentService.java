@@ -17,6 +17,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @Service
@@ -59,6 +60,21 @@ public class PaymentService {
     public PaymentDto requestPayment(Member member, Long reservationId) {
 
         Reservation reservation = reservationService.findByIdAndStudent(reservationId, member);
+        Optional<Payment> opPayment = paymentRepository.findByReservation(reservation);
+
+        if(opPayment.isPresent()) {
+            Payment payment = opPayment.get();
+            if(payment.getStatus().equals(PaymentStatus.PAID)) {
+                throw new ServiceException("409-2", "이미 처리된 결제입니다.");
+            } else if(payment.getStatus().equals(PaymentStatus.CANCELLED)) {
+                // todo: 취소된 결제는 로그 남겨서 삭제처리
+                throw new ServiceException("409-2", "취소된 결제입니다.");
+            } else{
+                // 이미 테이블에 있는 경우(FAIL 이나 PENDING 상태)
+                payment.setStatus(PaymentStatus.PENDING);
+                return new PaymentDto(paymentRepository.save(payment));
+            }
+        }
 
         String merchantUid = UUID.randomUUID().toString();
         long amount = reservation.getPrice();
@@ -71,11 +87,10 @@ public class PaymentService {
                 .status(PaymentStatus.PENDING)
                 .build();
 
-        Payment savedPayment = paymentRepository.save(payment);
-        return new PaymentDto(savedPayment);
+        return new PaymentDto(paymentRepository.save(payment));
     }
 
-    @Transactional
+    @Transactional(noRollbackFor = ServiceException.class)
     public PaymentDto confirmPayment(String paymentKey, String orderId, Long amount) {
 
         Payment payment = paymentRepository.findByMerchantUid(orderId)

@@ -1,5 +1,4 @@
-// ClientPage.tsx
-"use client"; // 이 컴포넌트는 클라이언트 측에서 실행되어야 합니다.
+"use client";
 
 import React, { useState, useEffect } from 'react';
 
@@ -25,49 +24,127 @@ interface FailData {
   errorMessage: string;
   orderId: string;
 }
-interface PaymentDto {
-  merchantUid: string;
-  amount: number;
-  courseName: string;
+// [수정] 백엔드 응답에 맞춰 reservationId 필드 추가
+interface ReservationDto {
+    reservationId: number; 
+    courseId: number;
+    courseTitle: string;
+    studentId: number;
+    studentName: string;
+    status: string;
+    price: number;
+    createdDate: string;
 }
+interface PaymentRequestResponseDto {
+  reservationId: number;
+  orderId: string;
+  amount: number;
+  paymentKey: string | null;
+  status: string;
+  createdDate: string;
+}
+interface LoginMember {
+    nickname: string | null;
+}
+
 declare global {
   interface Window {
     TossPayments: (clientKey: string) => TossPayments;
   }
 }
 
-// 컴포넌트 이름을 파일명과 일치시킵니다.
 export default function ClientPage() {
-  // --- 상태 관리 ---
-  const [orderInfo, setOrderInfo] = useState<PaymentDto | null>(null);
+  const [pendingReservations, setPendingReservations] = useState<ReservationDto[]>([]);
   const [tossPayments, setTossPayments] = useState<TossPayments | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [statusMessage, setStatusMessage] = useState('주문 정보를 불러오는 중...');
+  const [statusMessage, setStatusMessage] = useState('결제 대기 목록을 불러오는 중...');
+  const [currentUser, setCurrentUser] = useState<LoginMember | null>(null);
+  const [payingItemId, setPayingItemId] = useState<number | null>(null);
 
-  // --- 상수 정의 ---
-  const TOSS_CLIENT_KEY = 'test_ck_D5GePWvyJnrK0W0k6q8gLzN97Eoq';
+  const TOSS_CLIENT_KEY = 'test_ck_LlDJaYngroz40d27Z0bXVezGdRpX';  
   
-  // --- 함수: 백엔드에 결제 정보 생성 요청 ---
-  const fetchOrderInfo = async () => {
+  const fetchPendingReservations = async () => {
+    setIsLoading(true);
+    setStatusMessage('결제 대기 목록을 불러오는 중...');
     try {
-      // 실제로는 백엔드의 /api/payment/request API를 호출해야 합니다.
-      // 현재는 테스트를 위해 성공 응답을 시뮬레이션합니다.
-      const response: PaymentDto = {
-        merchantUid: `order_${new Date().getTime()}`,
-        amount: 35000,
-        courseName: '실전! 스프링 부트와 JPA 활용',
+      const fetchOptions = {
+        credentials: 'include' as RequestCredentials,
+        headers: { 'Content-Type': 'application/json' }
       };
-      setOrderInfo(response);
-      setStatusMessage('결제 준비가 완료되었습니다.');
+
+      const pendingRes = await fetch(`/api/reserve/me/pending?page=1&pageSize=10`, fetchOptions);
+      if (pendingRes.status === 401) {
+          setStatusMessage('로그인이 필요합니다. 다시 로그인해주세요.');
+          return;
+      }
+      if (!pendingRes.ok) {
+        throw new Error(`결제 대기 목록을 불러오는 데 실패했습니다. (상태: ${pendingRes.status})`);
+      }
+      
+      const pendingData = await pendingRes.json();
+      
+      if (!pendingData.data || !pendingData.data.items || pendingData.data.items.length === 0) {
+        setStatusMessage('결제할 항목이 없습니다.');
+        setPendingReservations([]);
+        return;
+      }
+      
+      const reservations: ReservationDto[] = pendingData.data.items.map((item: any) => ({
+        ...item,
+        createdDate: item.createdDatetime
+      }));
+
+      setPendingReservations(reservations);
+      if (reservations.length > 0) {
+        setCurrentUser({ nickname: reservations[0].studentName });
+      }
+      setStatusMessage('');
+
     } catch (error) {
-      console.error('주문 정보 로딩 실패:', error);
-      setStatusMessage('주문 정보를 불러오는 데 실패했습니다.');
+      console.error('결제 대기 목록 조회 실패:', error);
+      setStatusMessage(error instanceof Error ? error.message : String(error));
     } finally {
       setIsLoading(false);
     }
   };
 
-  // --- useEffect: SDK 로드 및 주문 정보 자동 요청 ---
+  const handlePaymentRequest = async (reservation: ReservationDto) => {
+    if (!tossPayments) {
+        alert("결제 모듈이 아직 준비되지 않았습니다. 잠시 후 다시 시도해주세요.");
+        return;
+    }
+    setPayingItemId(reservation.reservationId);
+    try {
+      const fetchOptions = {
+        method: 'POST',
+        credentials: 'include' as RequestCredentials,
+        headers: { 'Content-Type': 'application/json' }
+      };
+      
+      // [수정] reservationId 파라미터에 reservation.reservationId를 전달
+      const requestRes = await fetch(`/api/payment/request?reservationId=${reservation.reservationId}`, fetchOptions);
+      if (!requestRes.ok) {
+        throw new Error(`결제 요청에 실패했습니다. (상태: ${requestRes.status})`);
+      }
+      const paymentData: PaymentRequestResponseDto = (await requestRes.json()).data;
+
+      await tossPayments.requestPayment('카드', {
+        amount: paymentData.amount,
+        orderId: paymentData.orderId,
+        orderName: reservation.courseTitle,
+        customerName: reservation.studentName,
+        successUrl: `${window.location.origin}/toss/success`,
+        failUrl: `${window.location.origin}/toss/fail`,
+      });
+
+    } catch (error) {
+        console.error(`[${reservation.courseTitle}] 결제 처리 실패:`, error);
+        alert(`'${reservation.courseTitle}' 결제에 실패했습니다: ${error instanceof Error ? error.message : String(error)}`);
+    } finally {
+        setPayingItemId(null);
+    }
+  };
+
   useEffect(() => {
     const script = document.createElement('script');
     script.src = 'https://js.tosspayments.com/v1';
@@ -76,120 +153,69 @@ export default function ClientPage() {
 
     script.onload = () => {
       if (window.TossPayments) {
-        const tossInstance = window.TossPayments(TOSS_CLIENT_KEY);
-        setTossPayments(tossInstance);
-        fetchOrderInfo(); 
+        setTossPayments(window.TossPayments(TOSS_CLIENT_KEY));
       }
     };
 
+    fetchPendingReservations();
+
     return () => {
-      document.head.removeChild(script);
+      if (document.head.contains(script)) {
+        document.head.removeChild(script);
+      }
     };
   }, []);
 
-  // --- 함수: 토스페이먼츠 결제창 호출 ---
-  const handleTossPayment = async () => {
-    if (!tossPayments || !orderInfo) return;
-    setIsLoading(true);
-    setStatusMessage('결제창을 호출하는 중...');
-    try {
-      const result = await tossPayments.requestPayment('카드', {
-        amount: orderInfo.amount,
-        orderId: orderInfo.merchantUid,
-        orderName: orderInfo.courseName,
-        customerName: '김토스', // 실제로는 로그인된 사용자 이름 사용
-        successUrl: `${window.location.origin}/payment/success`, // 성공 시 리다이렉트 될 URL
-        failUrl: `${window.location.origin}/payment/fail`,     // 실패 시 리다이렉트 될 URL
-      });
-      if ('paymentKey' in result) {
-        await handleConfirmPayment(result);
-      } else {
-        setStatusMessage(`결제 실패: ${result.errorMessage}`);
-      }
-    } catch (error) {
-      console.error('결제창 호출 오류:', error);
-      setStatusMessage('결제에 실패했습니다.');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-  
-  // --- 함수: 백엔드에 최종 결제 승인 요청 ---
-  const handleConfirmPayment = async (data: SuccessData) => {
-      setStatusMessage('최종 결제를 승인하는 중...');
-      try {
-        const response = await fetch('/api/payment/confirm', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                paymentKey: data.paymentKey,
-                orderId: data.orderId,
-                amount: data.amount,
-            }),
-        });
-        if (response.ok) {
-            setStatusMessage('결제가 성공적으로 완료되었습니다!');
-        } else {
-            const errorData = await response.json();
-            throw new Error(errorData.message || '결제 승인에 실패했습니다.');
-        }
-    } catch (error) {
-        console.error('결제 승인 실패:', error);
-        setStatusMessage(String(error));
-    }
-  }
-
-  // --- UI 렌더링 ---
   return (
-    <div className="bg-gray-50 min-h-screen flex items-center justify-center font-sans">
-      <div className="w-full max-w-md bg-white rounded-xl shadow-lg p-8 space-y-6">
+    <div className="bg-gray-50 min-h-screen flex justify-center py-12 px-4 sm:px-6 lg:px-8">
+      <div className="w-full max-w-2xl bg-white rounded-xl shadow-lg p-8 space-y-8">
         <div className="text-center">
-          <h1 className="text-3xl font-bold text-gray-800">결제하기</h1>
-          <p className="text-gray-500 mt-2">주문 내용을 확인 후 결제를 진행해주세요.</p>
+          <h1 className="text-3xl font-bold text-gray-800">결제 대기 목록</h1>
+          {currentUser && <p className="text-gray-500 mt-2">{currentUser.nickname}님의 결제를 기다리는 수강 목록입니다.</p>}
         </div>
 
-        <div className="border-t border-b border-gray-200 py-6 space-y-4">
+        <div className="flow-root">
           {isLoading ? (
              <div className="text-center text-gray-500 py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto mb-4"></div>
                 <p>{statusMessage}</p>
              </div>
-          ) : orderInfo ? (
-            <>
-              <div className="flex justify-between items-center">
-                <span className="text-gray-600">주문명</span>
-                <span className="font-semibold text-gray-800">{orderInfo.courseName}</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-gray-600">주문번호</span>
-                <span className="font-mono text-sm text-gray-500">{orderInfo.merchantUid}</span>
-              </div>
-              <div className="flex justify-between items-center text-xl">
-                <span className="text-gray-600 font-bold">총 결제금액</span>
-                <span className="font-bold text-indigo-600">{orderInfo.amount.toLocaleString()}원</span>
-              </div>
-            </>
+          ) : pendingReservations.length > 0 ? (
+            <ul role="list" className="-my-6 divide-y divide-gray-200">
+              {pendingReservations.map((reservation) => (
+                // [수정] React key를 reservation.reservationId로 변경
+                <li key={reservation.reservationId} className="flex py-6">
+                  <div className="flex-1 flex flex-col">
+                    <div>
+                      <div className="flex justify-between text-base font-medium text-gray-900">
+                        <h3>{reservation.courseTitle}</h3>
+                        <p className="ml-4">{reservation.price.toLocaleString()}원</p>
+                      </div>
+                      <p className="mt-1 text-sm text-gray-500">신청일: {new Date(reservation.createdDate).toLocaleDateString()}</p>
+                    </div>
+                    <div className="flex-1 flex items-end justify-between text-sm">
+                      <p className="text-gray-500">상태: {reservation.status}</p>
+                      <div className="flex">
+                        <button
+                          type="button"
+                          onClick={() => handlePaymentRequest(reservation)}
+                          disabled={payingItemId === reservation.reservationId}
+                          className="font-medium text-white bg-blue-500 hover:bg-blue-600 px-4 py-2 rounded-md disabled:bg-gray-400 disabled:cursor-wait"
+                        >
+                          {payingItemId === reservation.reservationId ? '처리중...' : '결제하기'}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </li>
+              ))}
+            </ul>
           ) : (
-            <div className="text-center text-red-500 py-8">
-                <p>{statusMessage}</p>
+            <div className="text-center text-gray-500 py-8">
+                <p>{statusMessage || '결제할 항목이 없습니다.'}</p>
             </div>
           )}
         </div>
-
-        <div className="space-y-4">
-          <button
-            onClick={handleTossPayment}
-            disabled={isLoading || !orderInfo}
-            className="w-full bg-blue-500 text-white font-bold py-3 px-4 rounded-lg hover:bg-blue-600 focus:outline-none focus:ring-4 focus:ring-blue-300 transition-all duration-300 disabled:bg-gray-300 disabled:cursor-not-allowed"
-          >
-            {isLoading ? '처리 중...' : (orderInfo ? `${orderInfo.amount.toLocaleString()}원 결제하기` : '결제 정보 로딩 중...')}
-          </button>
-        </div>
-        
-        {statusMessage.includes('완료') || statusMessage.includes('실패') ? (
-            <p className={`text-center font-semibold ${statusMessage.includes('완료') ? 'text-green-600' : 'text-red-600'}`}>
-                {statusMessage}
-            </p>
-        ) : null}
       </div>
     </div>
   );

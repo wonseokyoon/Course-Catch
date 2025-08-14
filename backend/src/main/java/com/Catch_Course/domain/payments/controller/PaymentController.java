@@ -9,6 +9,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 import org.hibernate.validator.constraints.Length;
 import org.springframework.web.bind.annotation.*;
@@ -27,7 +28,7 @@ public class PaymentController {
 
     @Operation(summary = "수강신청 정보로 결제 정보 조회")
     @GetMapping("/{reservationId}")
-    public RsData<PaymentDto> getPayment(@RequestBody Long reservationId) {
+    public RsData<PaymentDto> getPayment(@PathVariable Long reservationId) {
 
         Member member = rq.getMember(rq.getDummyMember());  // 실제 멤버 객체
 
@@ -73,7 +74,7 @@ public class PaymentController {
 
     record confirmPaymentReqBody(@NotBlank String paymentKey,
                                  @NotBlank @Length(min = 3) String orderId,
-                                 @NotBlank @Length(min = 3) Long amount) {
+                                 @NotNull Long amount) {
     }
 
     @Operation(summary = "결제 승인")

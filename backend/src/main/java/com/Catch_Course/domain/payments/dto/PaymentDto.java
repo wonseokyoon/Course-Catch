@@ -9,6 +9,8 @@ import java.time.LocalDateTime;
 @Getter
 public class PaymentDto {
     private long reservationId;
+    private String courseTitle;
+    private String instructor;
     private String orderId;
     private long amount;
     private String paymentKey;
@@ -18,6 +20,8 @@ public class PaymentDto {
 
     public PaymentDto(Payment payment) {
         this.reservationId = payment.getReservation().getId();
+        this.courseTitle = payment.getReservation().getCourse().getTitle();
+        this.instructor = payment.getReservation().getCourse().getInstructor().getNickname();
         this.orderId = payment.getMerchantUid();
         this.amount = payment.getAmount();
         this.paymentKey = payment.getPaymentKey();

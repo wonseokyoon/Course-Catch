@@ -1,7 +1,6 @@
 package com.Catch_Course.global.payment;
 
 import com.Catch_Course.global.exception.ServiceException;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
@@ -17,12 +16,16 @@ import java.util.Map;
 
 @Slf4j
 @Service
-@RequiredArgsConstructor
 public class TossPaymentsService {
-    @Value("${custom.toss.payment.secret}")
-    private String secretKey;
+
+    private final String secretKey;
     private final RestTemplate restTemplate;
-    private final String TOSS_CONFIRM_URL = "https://api.tosspayments.com/v1/payments/confirm";
+    private static final String TOSS_CONFIRM_URL = "https://api.tosspayments.com/v1/payments/confirm";
+
+    public TossPaymentsService(@Value("${custom.toss.payment.secret}") String secretKey, RestTemplate restTemplate) {
+        this.secretKey = secretKey;
+        this.restTemplate = restTemplate;
+    }
 
     public void confirm(String paymentKey, String orderId, Long amount) {
         log.info("Toss Payments 결제 승인 요청 시작: orderId={}", orderId);
@@ -37,6 +40,9 @@ public class TossPaymentsService {
         HttpEntity<Map<String, Object>> requestEntity = new HttpEntity<>(requestBody, headers);
 
         try {
+            // [추가] API 호출 직전, 실제 전송되는 헤더 값을 로그로 확인합니다.
+            log.info("전송될 Authorization 헤더: {}", headers.getFirst("Authorization"));
+
             // API 호출
             restTemplate.postForObject(TOSS_CONFIRM_URL, requestEntity, Map.class);
             log.info("Toss Payments 결제 승인 성공: orderId={}", orderId);
@@ -48,7 +54,9 @@ public class TossPaymentsService {
 
     private HttpHeaders createHeaders() {
         HttpHeaders headers = new HttpHeaders();
-        headers.set("Authorization", "Basic " + Base64.getEncoder().encodeToString((secretKey + ":").getBytes(StandardCharsets.UTF_8)));
+        // Base64 인코딩 시, 생성자에서 주입받은 final secretKey를 사용합니다.
+        String encodedKey = Base64.getEncoder().encodeToString((this.secretKey.trim() + ":").getBytes(StandardCharsets.UTF_8));
+        headers.set("Authorization", "Basic " + encodedKey);
         headers.setContentType(MediaType.APPLICATION_JSON);
         headers.setAccept(Collections.singletonList(MediaType.APPLICATION_JSON));
         return headers;
