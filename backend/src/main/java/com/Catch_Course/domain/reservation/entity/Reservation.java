@@ -34,4 +34,7 @@ public class Reservation extends BaseTime {
 
     @OneToOne(mappedBy = "reservation", fetch = FetchType.LAZY)
     private Payment payment;
+
+    @Column(nullable = false)
+    private Long price;
 }

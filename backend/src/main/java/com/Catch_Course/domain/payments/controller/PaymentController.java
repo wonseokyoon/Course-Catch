@@ -7,11 +7,11 @@ import com.Catch_Course.global.Rq;
 import com.Catch_Course.global.dto.RsData;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
 import lombok.RequiredArgsConstructor;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.hibernate.validator.constraints.Length;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
@@ -41,7 +41,7 @@ public class PaymentController {
 
     @Operation(summary = "결제 목록 조회")
     @GetMapping()
-    public RsData<List<PaymentDto>> getPayments(@RequestParam Long reservationId) {
+    public RsData<List<PaymentDto>> getPayments() {
         Member member = rq.getMember(rq.getDummyMember());  // 실제 멤버 객체
 
         List<PaymentDto> paymentDtos = paymentService.getPayments(member);
@@ -53,5 +53,36 @@ public class PaymentController {
         );
     }
 
+
+    @Operation(summary = "결제 생성 및 요청")
+    @PostMapping("/request")
+    public RsData<PaymentDto> requestPayment(@RequestParam Long reservationId) {
+        Member member = rq.getMember(rq.getDummyMember());  // 실제 멤버 객체
+
+        PaymentDto paymentDto = paymentService.requestPayment(member, reservationId);
+
+        return new RsData<>(
+                "200-1",
+                "신청 목록 조회가 완료되었습니다.",
+                paymentDto
+        );
+    }
+
+    record confirmPaymentReqBody(@NotBlank String paymentKey,
+                                 @NotBlank @Length(min = 3) String orderId,
+                                 @NotBlank @Length(min = 3) Long amount) {
+    }
+
+    @Operation(summary = "결제 승인")
+    @PostMapping("/confirm")
+    public RsData<PaymentDto> confirmPayment(@RequestBody @Valid confirmPaymentReqBody body) {
+        PaymentDto paymentDto = paymentService.confirmPayment(body.paymentKey, body.orderId, body.amount);
+
+        return new RsData<>(
+                "200-1",
+                "신청 목록 조회가 완료되었습니다.",
+                paymentDto
+        );
+    }
 
 }

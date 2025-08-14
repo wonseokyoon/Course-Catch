@@ -13,6 +13,7 @@ public class ReservationDto {
     private long studentId;             // 학생 id
     private String studentName;         // 학생 이름
     private String status;              // 예약 상태
+    private Long price;
     @JsonProperty("createdDatetime")
     private LocalDateTime createdDate;
 
@@ -22,6 +23,7 @@ public class ReservationDto {
         this.studentId = reservation.getStudent().getId();
         this.studentName = reservation.getStudent().getNickname();
         this.status = reservation.getStatus().toString();
+        this.price = reservation.getPrice();
         this.createdDate = reservation.getCreatedDate();
     }
 

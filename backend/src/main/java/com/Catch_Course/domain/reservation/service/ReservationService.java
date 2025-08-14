@@ -155,4 +155,11 @@ public class ReservationService {
                 .build()
         );
     }
+
+    @Transactional(readOnly = true)
+    public Reservation findByIdAndStudent(Long reservationId, Member member) {
+        return reservationRepository.findByIdAndStudentAndStatus(reservationId,member,ReservationStatus.PENDING)
+                .orElseThrow(() -> new ServiceException("404-3","수강신청 이력이 없습니다."));
+    }
+
 }
