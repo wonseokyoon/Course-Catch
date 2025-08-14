@@ -71,7 +71,7 @@ jobs:
   # 2. 릴리스 : main/develop 브랜치로 Push될 때만 실행
   makeTagAndRelease:
     name: Create Tag and Release
-    # if: github.event_name == 'push'
+    if: github.event_name == 'push'
     needs: backend-ci
     runs-on: ubuntu-latest
     permissions:
@@ -101,7 +101,7 @@ jobs:
   # 3. 빌드 및 배포: main/develop 브랜치로 Push될 때만 실행
   buildImageAndPush:
     name: 도커 이미지 빌드와 푸시
-    # if: github.event_name == 'push'
+    if: github.event_name == 'push'
     needs: makeTagAndRelease
     runs-on: ubuntu-latest
     steps:
