@@ -13,6 +13,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
@@ -32,5 +34,19 @@ public class PaymentService {
                 .orElseThrow(() -> new ServiceException("404-5","결제 정보가 없습니다."));
 
         return new PaymentDto(payment);
+    }
+
+    public List<PaymentDto> getPayments(Member member) {
+        List<Reservation> reservationList = reservationRepository.findByStudent(member);
+
+        List<Payment> payments = paymentRepository.findByReservationIn(reservationList);
+
+        if(payments.isEmpty()) {
+            throw new ServiceException("404-5","결제 정보가 없습니다.");
+        }
+
+        return payments.stream()
+                .map(PaymentDto::new)
+                .toList();
     }
 }

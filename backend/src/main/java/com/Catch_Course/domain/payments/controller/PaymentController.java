@@ -13,6 +13,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.List;
+
 @Tag(name = "paymentController", description = "결제 관련 API")
 @RestController
 @RequestMapping("/api/payment")
@@ -37,6 +39,19 @@ public class PaymentController {
         );
     }
 
+    @Operation(summary = "결제 목록 조회")
+    @GetMapping()
+    public RsData<List<PaymentDto>> getPayments(@RequestParam Long reservationId) {
+        Member member = rq.getMember(rq.getDummyMember());  // 실제 멤버 객체
+
+        List<PaymentDto> paymentDtos = paymentService.getPayments(member);
+
+        return new RsData<>(
+                "200-1",
+                "신청 목록 조회가 완료되었습니다.",
+                paymentDtos
+        );
+    }
 
 
 }
