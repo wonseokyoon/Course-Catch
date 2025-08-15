@@ -35,6 +35,11 @@ public class ReservationCancelConsumer {
             Reservation reservation = reservationRepository.findById(reservationCancelRequest.getReservationId())
                     .orElseThrow(() -> new ServiceException("404-3", "수강 신청 이력이 없습니다."));
 
+            if (reservation.getStatus() == ReservationStatus.CANCELLED) {
+                log.warn("이미 취소된 예약입니다: {}", reservation.getId());
+                return;
+            }
+
             cancelProcess(reservation, reservation.getCourse());
             saveDeleteHistory(reservationCancelRequest.getMemberId(), reservationCancelRequest.getCourseId());
             log.info("{}의 수강 취소 이력이 성공적으로 처리되었습니다.", reservationCancelRequest.getCourseId());
@@ -50,6 +55,7 @@ public class ReservationCancelConsumer {
 
         // 상태 변경
         reservation.setStatus(ReservationStatus.CANCELLED);
+        reservationRepository.save(reservation);
     }
 
     public void saveDeleteHistory(Long memberId, Long courseId) {

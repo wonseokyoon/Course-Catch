@@ -3,10 +3,12 @@ package com.Catch_Course.domain.payments.dto;
 import com.Catch_Course.domain.payments.entity.Payment;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 
 @Getter
+@NoArgsConstructor
 public class PaymentDto {
     private long reservationId;
     private String courseTitle;
