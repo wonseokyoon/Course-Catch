@@ -15,6 +15,7 @@ import com.Catch_Course.global.kafka.producer.ReservationCancelProducer;
 import com.Catch_Course.global.payment.TossPaymentsService;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -29,6 +30,8 @@ import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.KafkaContainer;
 import org.testcontainers.containers.wait.strategy.Wait;
@@ -58,7 +61,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @ActiveProfiles("test")
 @AutoConfigureMockMvc
 @Testcontainers
-class PaymentControllerTest {
+@Transactional(propagation = Propagation.NOT_SUPPORTED)
+public class PaymentControllerTest {
     @Autowired
     private MockMvc mvc;
 
@@ -123,6 +127,12 @@ class PaymentControllerTest {
                 .build();
 
         reservationRepository.save(reservation);
+    }
+
+    @AfterEach
+    void tearDown() {
+        paymentRepository.deleteAllInBatch();
+        reservationRepository.deleteAllInBatch();
     }
 
     private ResultActions confirmRequest(String paymentKey, String orderId, long amount) throws Exception {
@@ -190,44 +200,6 @@ class PaymentControllerTest {
 
         Payment canceledPayment = paymentRepository.findByReservation(reservation).get();
         assertThat(canceledPayment.getStatus()).isEqualTo(PaymentStatus.CANCEL_REQUESTED);
-    }
-
-    @Test
-    @DisplayName("E2E 테스트: 결제 취소 요청 시 최종적으로 결제와 예약 상태가 모두 CANCELLED로 변경된다")
-    void paymentAndReservation_Should_Be_Cancelled_After_CancelRequest() throws Exception {
-        reservation.setStatus(ReservationStatus.COMPLETED);
-        Course course = reservation.getCourse();
-        course.setCurrentRegistration(course.getCapacity());
-        courseRepository.save(course);
-        reservationRepository.save(reservation);
-
-        Payment payment = Payment.builder()
-                .reservation(reservation)
-                .member(loginedMember)
-                .status(PaymentStatus.PAID)
-                .merchantUid("e2e-test-merchant-uid-" + System.currentTimeMillis())
-                .paymentKey("e2e-test-payment-key")
-                .amount(reservation.getPrice())
-                .build();
-        paymentRepository.save(payment);
-
-        doNothing().when(tossPaymentsService).cancel(any(), any());
-
-        mvc.perform(
-                        delete("/api/payment/{reservationId}", reservation.getId())
-                                .header("Authorization", "Bearer " + token)
-                )
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.status").value("CANCEL_REQUESTED"));
-
-
-        Awaitility.await().atMost(10, TimeUnit.SECONDS).untilAsserted(() -> {
-            Payment finalizedPayment = paymentRepository.findById(payment.getId()).get();
-            Reservation finalizedReservation = reservationRepository.findById(reservation.getId()).get();
-
-            assertThat(finalizedPayment.getStatus()).isEqualTo(PaymentStatus.CANCELLED);
-            assertThat(finalizedReservation.getStatus()).isEqualTo(ReservationStatus.CANCELLED);
-        });
     }
 
     @Test

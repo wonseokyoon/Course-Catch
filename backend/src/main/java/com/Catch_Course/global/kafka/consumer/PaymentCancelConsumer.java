@@ -31,7 +31,7 @@ public class PaymentCancelConsumer {
     private final CancelHistoryRepository cancelHistoryRepository;
     private final ReservationCancelProducer reservationCancelProducer;
     // 구독
-    @KafkaListener(topics = "payment_cancel", groupId = "course", errorHandler = "myErrorHandler")
+    @KafkaListener(topics = "payment_cancel", groupId = "course")
     @Transactional
     public void consume(PaymentCancelRequest paymentCancelRequest) {
         log.info("결제 취소 요청 처리 시작: {}", paymentCancelRequest);
@@ -53,7 +53,7 @@ public class PaymentCancelConsumer {
 
     public void cancelProcess(Payment payment,PaymentCancelRequest paymentCancelRequest) {
 
-        Reservation reservation = reservationRepository.findById(paymentCancelRequest.getReservationId())
+        Reservation reservation = reservationRepository.findWithCourseById(paymentCancelRequest.getReservationId())
                 .orElseThrow(() -> new ServiceException("404-3","수강신청 이력이 없습니다."));
 
         Member member = memberRepository.findById(paymentCancelRequest.getMemberId())
@@ -61,6 +61,7 @@ public class PaymentCancelConsumer {
 
         // 상태 변경
         payment.setStatus(PaymentStatus.CANCELLED);
+        paymentRepository.save(payment);
 
         // 예약 취소 메세지 전송
         reservationCancelProducer.send(new ReservationCancelRequest(reservation.getId(), member.getId(), paymentCancelRequest.getCourseId()));
