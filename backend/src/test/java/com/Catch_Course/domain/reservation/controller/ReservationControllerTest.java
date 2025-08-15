@@ -208,7 +208,7 @@ class ReservationControllerTest {
     }
 
     @Test
-    @DisplayName("수강 취소")
+    @DisplayName("수강 취소 - Pending 상태")
     void cancelReservation() throws Exception {
         Long courseId = 1L;
         Course course = courseService.findById(courseId);
@@ -222,7 +222,7 @@ class ReservationControllerTest {
         resultActions
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value("200-1"))
-                .andExpect(jsonPath("$.msg").value("수강 취소되었습니다."));
+                .andExpect(jsonPath("$.msg").value("수강 취소 요청이 접수되었습니다."));
     }
 
     @Test
@@ -230,6 +230,7 @@ class ReservationControllerTest {
     void cancelReservation2() throws Exception {
         Long courseId = 1L;
         cancelReservation();    // 수강 취소
+        Thread.sleep(1000);
 
         ResultActions resultActions = mvc.perform(
                 delete("/api/reserve?courseId=%d".formatted(courseId))
@@ -237,14 +238,51 @@ class ReservationControllerTest {
         ).andDo(print());
 
         resultActions
-                .andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.code").value("404-3"))
-                .andExpect(jsonPath("$.msg").value("수강 신청 이력이 없습니다."));
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("409-5"))
+                .andExpect(jsonPath("$.msg").value("이미 취소된 신청입니다."));
+    }
+
+    @Test
+    @DisplayName("수강 취소 실패 - Reservation: Failed 상태")
+    void cancelReservation3() throws Exception {
+        Long courseId = 1L;
+        Course course = courseService.findById(courseId);
+        reservationTestHelper.reserveSetUpFailed(loginedMember, course);
+        Thread.sleep(1000); // 잠시 대기
+
+        ResultActions resultActions = mvc.perform(
+                delete("/api/reserve?courseId=%d".formatted(courseId))
+                        .header("Authorization", "Bearer " + token)
+        ).andDo(print());
+
+        resultActions
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("409-6"))
+                .andExpect(jsonPath("$.msg").value("취소할 수 없는 신청입니다."));
+    }
+
+    @Test
+    @DisplayName("수강 취소 실패 - Reservation: Waiting 상태")
+    void cancelReservation4() throws Exception {
+        Long courseId = 1L;
+        Course course = courseService.findById(courseId);
+        reservationTestHelper.reserveSetUpWaiting(loginedMember, course);
+
+        ResultActions resultActions = mvc.perform(
+                delete("/api/reserve?courseId=%d".formatted(courseId))
+                        .header("Authorization", "Bearer " + token)
+        ).andDo(print());
+
+        resultActions
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("409-6"))
+                .andExpect(jsonPath("$.msg").value("취소할 수 없는 신청입니다."));
     }
 
     @Test
     @DisplayName("수강 취소 실패 - 이력이 없음")
-    void cancelReservation3() throws Exception {
+    void cancelReservation5() throws Exception {
         Long courseId = 3L;
 
         ResultActions resultActions = mvc.perform(
@@ -260,7 +298,7 @@ class ReservationControllerTest {
 
     @Test
     @DisplayName("수강 취소 실패 - 존재하지 않는 강의")
-    void cancelReservation4() throws Exception {
+    void cancelReservation6() throws Exception {
         Long courseId = 999L;
 
         ResultActions resultActions = mvc.perform(

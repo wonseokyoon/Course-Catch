@@ -44,4 +44,20 @@ public class ReservationTestHelper {
         em.flush(); // DB에 적고
         em.clear(); // 영속성 컨텍스트 클리어
     }
+
+    @Transactional(propagation = Propagation.REQUIRES_NEW)  // 반드시 새로운 트랜잭션 생성
+    public void reserveSetUpFailed(Member loginedMember, Course course) {
+        Reservation reservation = new Reservation(loginedMember,course, ReservationStatus.FAILED, course.getPrice());  // 대기열 등록
+        reservationRepository.save(reservation);
+        em.flush(); // DB에 적고
+        em.clear(); // 영속성 컨텍스트 클리어
+    }
+
+    @Transactional(propagation = Propagation.REQUIRES_NEW)  // 반드시 새로운 트랜잭션 생성
+    public void reserveSetUpWaiting(Member loginedMember, Course course) {
+        Reservation reservation = new Reservation(loginedMember,course, ReservationStatus.WAITING, course.getPrice());  // 대기열 등록
+        reservationRepository.save(reservation);
+        em.flush(); // DB에 적고
+        em.clear(); // 영속성 컨텍스트 클리어
+    }
 }
