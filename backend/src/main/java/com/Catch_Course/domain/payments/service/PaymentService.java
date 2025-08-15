@@ -8,7 +8,6 @@ import com.Catch_Course.domain.payments.repository.PaymentRepository;
 import com.Catch_Course.domain.reservation.entity.Reservation;
 import com.Catch_Course.domain.reservation.entity.ReservationStatus;
 import com.Catch_Course.domain.reservation.repository.ReservationRepository;
-import com.Catch_Course.domain.reservation.service.ReservationService;
 import com.Catch_Course.global.exception.ServiceException;
 import com.Catch_Course.global.kafka.dto.PaymentCancelRequest;
 import com.Catch_Course.global.kafka.producer.PaymentCancelProducer;
@@ -34,12 +33,9 @@ public class PaymentService {
 
     private final PaymentRepository paymentRepository;
     private final ReservationRepository reservationRepository;
-    private final ReservationService reservationService;
     private final TossPaymentsService tossPaymentsService;
     private final PaymentCancelProducer paymentCancelProducer;
     private final ApplicationEventPublisher eventPublisher;
-
-
 
     public PaymentDto getPayment(Member member, Long reservationId) {
 
@@ -69,7 +65,9 @@ public class PaymentService {
     @Transactional
     public PaymentDto requestPayment(Member member, Long reservationId) {
 
-        Reservation reservation = reservationService.findByIdAndStudent(reservationId, member);
+        Reservation reservation = reservationRepository.findByIdAndStudentAndStatus(reservationId, member, ReservationStatus.PENDING)
+                .orElseThrow(() -> new ServiceException("404-3", "수강신청 이력이 없습니다."));
+
         Optional<Payment> opPayment = paymentRepository.findByReservation(reservation);
 
         if (opPayment.isPresent()) {
@@ -136,7 +134,7 @@ public class PaymentService {
     }
 
     @Transactional
-    public PaymentDto deletePayment(Member member, Long reservationId) {
+    public PaymentDto deletePaymentRequest(Member member, Long reservationId) {
         // reservation 이력 조회
         Reservation reservation = reservationRepository.findByIdAndStudentAndStatus(reservationId, member, ReservationStatus.COMPLETED)
                 .orElseThrow(() -> new ServiceException("404-3", "수강신청 이력이 없습니다."));

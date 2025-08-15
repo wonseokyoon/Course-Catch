@@ -4,5 +4,6 @@ public enum ReservationStatus {
     COMPLETED,       // 신청 완료
     WAITING,         // 대기
     FAILED,          // 실패
-    PENDING         // 결제 대기
+    PENDING,         // 결제 대기
+    CANCELLED
 }

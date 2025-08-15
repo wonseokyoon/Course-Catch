@@ -95,7 +95,7 @@ public class PaymentController {
     public RsData<PaymentDto> getReservations(@PathVariable Long reservationId) {
         Member member = rq.getMember(rq.getDummyMember());  // 실제 멤버 객체
 
-        PaymentDto paymentDto = paymentService.deletePayment(member, reservationId);
+        PaymentDto paymentDto = paymentService.deletePaymentRequest(member, reservationId);
 
         return new RsData<>(
                 "200-1",

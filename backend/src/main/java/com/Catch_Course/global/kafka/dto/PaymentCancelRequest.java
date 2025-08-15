@@ -16,6 +16,7 @@ public class PaymentCancelRequest {
     private String cancelReason;
     private Long reservationId;
     private Long memberId;
+    private Long courseId;
 
     public PaymentCancelRequest(Payment payment, String cancelReason, Reservation reservation, Member member) {
         this.paymentId = payment.getId();
@@ -23,5 +24,6 @@ public class PaymentCancelRequest {
         this.cancelReason = cancelReason;
         this.reservationId = reservation.getId();
         this.memberId = member.getId();
+        this.courseId = reservation.getCourse().getId();
     }
 }

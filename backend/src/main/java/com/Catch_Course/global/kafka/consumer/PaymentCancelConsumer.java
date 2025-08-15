@@ -9,9 +9,10 @@ import com.Catch_Course.domain.payments.repository.CancelHistoryRepository;
 import com.Catch_Course.domain.payments.repository.PaymentRepository;
 import com.Catch_Course.domain.reservation.entity.Reservation;
 import com.Catch_Course.domain.reservation.repository.ReservationRepository;
-import com.Catch_Course.domain.reservation.service.ReservationService;
 import com.Catch_Course.global.exception.ServiceException;
 import com.Catch_Course.global.kafka.dto.PaymentCancelRequest;
+import com.Catch_Course.global.kafka.dto.ReservationCancelRequest;
+import com.Catch_Course.global.kafka.producer.ReservationCancelProducer;
 import com.Catch_Course.global.payment.TossPaymentsService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -27,9 +28,8 @@ public class PaymentCancelConsumer {
     private final PaymentRepository paymentRepository;
     private final ReservationRepository reservationRepository;
     private final MemberRepository memberRepository;
-    private final ReservationService reservationService;
     private final CancelHistoryRepository cancelHistoryRepository;
-
+    private final ReservationCancelProducer reservationCancelProducer;
     // 구독
     @KafkaListener(topics = "payment_cancel", groupId = "course", errorHandler = "myErrorHandler")
     @Transactional
@@ -62,8 +62,8 @@ public class PaymentCancelConsumer {
         // 상태 변경
         payment.setStatus(PaymentStatus.CANCELLED);
 
-        // 예약 취소
-        reservationService.cancelReserve(member, reservation.getCourse().getId());
+        // 예약 취소 메세지 전송
+        reservationCancelProducer.send(new ReservationCancelRequest(reservation.getId(), member.getId(), paymentCancelRequest.getCourseId()));
 
         // 결제 취소 이력 저장
         saveCancelHistory(payment, reservation, member);

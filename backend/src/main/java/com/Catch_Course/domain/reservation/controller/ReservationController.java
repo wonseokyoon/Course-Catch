@@ -45,11 +45,11 @@ public class ReservationController {
     public RsData<ReservationDto> cancelReservation(@RequestParam Long courseId) {
 
         Member member = rq.getMember(rq.getDummyMember());  // 실제 멤버 객체
-        ReservationDto reservationDto = reservationService.cancelReserve(member, courseId);
+        ReservationDto reservationDto = reservationService.cancelReserveRequest(member, courseId);
 
         return new RsData<>(
                 "200-1",
-                "수강 취소되었습니다.",
+                "수강 취소 요청이 접수되었습니다.",
                 reservationDto
         );
     }
