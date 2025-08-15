@@ -90,4 +90,18 @@ public class PaymentController {
         );
     }
 
+    @Operation(summary = "결제 취소")
+    @DeleteMapping("/{reservationId}")
+    public RsData<PaymentDto> getReservations(@PathVariable Long reservationId) {
+        Member member = rq.getMember(rq.getDummyMember());  // 실제 멤버 객체
+
+        PaymentDto paymentDto = paymentService.deletePayment(member, reservationId);
+
+        return new RsData<>(
+                "200-1",
+                "결제 취소가 완료되었습니다.",
+                paymentDto
+        );
+    }
+
 }

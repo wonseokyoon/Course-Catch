@@ -2,8 +2,10 @@ package com.Catch_Course.domain.payments.service;
 
 import com.Catch_Course.domain.member.entity.Member;
 import com.Catch_Course.domain.payments.dto.PaymentDto;
+import com.Catch_Course.domain.payments.entity.CancelHistory;
 import com.Catch_Course.domain.payments.entity.Payment;
 import com.Catch_Course.domain.payments.entity.PaymentStatus;
+import com.Catch_Course.domain.payments.repository.CancelHistoryRepository;
 import com.Catch_Course.domain.payments.repository.PaymentRepository;
 import com.Catch_Course.domain.reservation.entity.Reservation;
 import com.Catch_Course.domain.reservation.entity.ReservationStatus;
@@ -30,6 +32,7 @@ public class PaymentService {
     private final ReservationRepository reservationRepository;
     private final ReservationService reservationService;
     private final TossPaymentsService tossPaymentsService;
+    private final CancelHistoryRepository cancelHistoryRepository;
 
     public PaymentDto getPayment(Member member, Long reservationId) {
 
@@ -121,6 +124,40 @@ public class PaymentService {
             // 상태 저장
             paymentRepository.save(payment);
         }
+
+        return new PaymentDto(paymentRepository.save(payment));
+    }
+
+    @Transactional
+    public PaymentDto deletePayment(Member member, Long reservationId) {
+        // reservation 이력 조회
+        Reservation reservation = reservationRepository.findByIdAndStudentAndStatus(reservationId, member, ReservationStatus.COMPLETED)
+                .orElseThrow(() -> new ServiceException("404-3", "수강신청 이력이 없습니다."));
+
+        Payment payment = paymentRepository.findByReservation(reservation)
+                .orElseThrow(() -> new ServiceException("404-5", "결제 정보가 없습니다."));
+
+        String cancelReason = "고객 요청";
+        tossPaymentsService.cancel(payment.getPaymentKey(),cancelReason);
+
+        // 상태 변경
+        payment.setStatus(PaymentStatus.CANCELLED);
+
+        // 신청 이력 삭제
+        reservationService.cancelReserve(member,reservation.getCourse().getId());
+
+        // 삭제 이력 저장
+        reservationService.saveDeleteHistory(member.getId(), reservation.getCourse().getId());
+
+        // 취소 이력 저장
+        cancelHistoryRepository.save(CancelHistory.builder()
+                .paymentId(payment.getId())
+                .reservationId(reservation.getId())
+                .orderId(payment.getMerchantUid())
+                .memberNickname(member.getNickname())
+                .courseTitle(reservation.getCourse().getTitle())
+                .amount(payment.getAmount())
+                .build());
 
         return new PaymentDto(paymentRepository.save(payment));
     }
