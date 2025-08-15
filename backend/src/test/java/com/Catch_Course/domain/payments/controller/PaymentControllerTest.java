@@ -40,6 +40,7 @@ import org.testcontainers.utility.DockerImageName;
 import java.nio.charset.StandardCharsets;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
@@ -47,8 +48,7 @@ import java.util.function.Supplier;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -363,4 +363,103 @@ class PaymentControllerTest {
                 .andExpect(jsonPath("$.msg").value("이미 취소된 결제입니다."));
     }
 
+    @Test
+    @DisplayName("단일 결제 정보 조회 성공")
+    void getPayment_Success() throws Exception {
+        reservation.setStatus(ReservationStatus.COMPLETED);
+        reservationRepository.save(reservation);
+        Payment payment = Payment.builder()
+                .reservation(reservation)
+                .member(loginedMember)
+                .status(PaymentStatus.PAID)
+                .merchantUid("get-payment-test-uid")
+                .paymentKey("get-payment-test-key")
+                .amount(10000L)
+                .build();
+        paymentRepository.save(payment);
+
+        // WHEN: 해당 reservationId로 결제 정보 조회를 요청
+        ResultActions resultActions = mvc.perform(
+                get("/api/payment/{reservationId}", reservation.getId())
+                        .header("Authorization", "Bearer " + token)
+        ).andDo(print());
+
+        // THEN: 200 OK 상태와 함께 올바른 결제 정보가 반환됨
+        resultActions
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value("200-1"))
+                .andExpect(jsonPath("$.data.orderId").value("get-payment-test-uid"))
+                .andExpect(jsonPath("$.data.amount").value(10000L));
+    }
+
+    @Test
+    @DisplayName("단일 결제 정보 조회 실패 - COMPLETED 상태의 예약이 없음")
+    void getPayment_Fails_When_ReservationNotCompleted() throws Exception {
+        ResultActions resultActions = mvc.perform(
+                get("/api/payment/{reservationId}", reservation.getId())
+                        .header("Authorization", "Bearer " + token)
+        ).andDo(print());
+
+        resultActions
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("404-3"))
+                .andExpect(jsonPath("$.msg").value("수강신청 이력이 없습니다."));
+    }
+
+    @Test
+    @DisplayName("결제 목록 조회 성공")
+    void getPayments_Success() throws Exception {
+        Course course2 = courseRepository.findById(2L).get();
+        Reservation reservation2 = Reservation.builder()
+                .student(loginedMember)
+                .course(course2)
+                .status(ReservationStatus.COMPLETED)
+                .price(course2.getPrice())
+                .build();
+        reservationRepository.save(reservation2);
+
+        Payment payment1 = Payment.builder()
+                .reservation(reservation)
+                .member(loginedMember)
+                .status(PaymentStatus.PAID)
+                .merchantUid("get-payment-test-uid")
+                .paymentKey("get-payment-test-key")
+                .amount(reservation.getPrice())
+                .build();
+
+        Payment payment2 = Payment.builder()
+                .reservation(reservation2)
+                .member(loginedMember)
+                .status(PaymentStatus.PAID)
+                .merchantUid("get-payment-test-uid2")
+                .paymentKey("get-payment-test-key2")
+                .amount(reservation2.getPrice())
+                .build();
+
+        paymentRepository.saveAll(List.of(payment1, payment2));
+
+        ResultActions resultActions = mvc.perform(
+                get("/api/payment")
+                        .header("Authorization", "Bearer " + token)
+        ).andDo(print());
+
+        resultActions
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value("200-1"))
+                .andExpect(jsonPath("$.msg").value("신청 목록 조회가 완료되었습니다."));;
+    }
+
+    @Test
+    @DisplayName("결제 목록 조회 실패 - 결제 내역이 없음")
+    void getPayments_Fails_When_NoPayments() throws Exception {
+        ResultActions resultActions = mvc.perform(
+                get("/api/payment")
+                        .header("Authorization", "Bearer " + token)
+        ).andDo(print());
+
+        resultActions
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("404-5"))
+                .andExpect(jsonPath("$.msg").value("결제 정보가 없습니다."));
+    }
 }
