@@ -99,7 +99,7 @@ public class PaymentController {
 
         return new RsData<>(
                 "200-1",
-                "결제 취소가 완료되었습니다.",
+                "결제 취소요청이 접수되었습니다.",
                 paymentDto
         );
     }

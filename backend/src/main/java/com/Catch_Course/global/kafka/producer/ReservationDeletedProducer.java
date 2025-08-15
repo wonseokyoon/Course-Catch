@@ -17,7 +17,7 @@ public class ReservationDeletedProducer {
     private static final String TOPIC = "course-reservation-deleted";
 
     public void send(ReservationDeletedRequest request) {
-        log.info("Sending reservation deleted request: {}", request);
+        log.info("취소 이력 저장 요청 메세지 전송: {}", request);
 
         kafkaTemplate.send(TOPIC, request);
     }

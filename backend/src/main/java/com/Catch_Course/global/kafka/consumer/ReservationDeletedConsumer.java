@@ -6,6 +6,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 @Slf4j
 @Component
@@ -16,9 +17,10 @@ public class ReservationDeletedConsumer {
 
     // 구독
     @KafkaListener(topics = "course-reservation-deleted", groupId = "course")
+    @Transactional
     public void consume(ReservationDeletedRequest reservationDeletedRequest) {
 
-        log.info("Consuming reservation request: {}", reservationDeletedRequest);
+        log.info("수강 취소 이력 저장 처리 시작: {}", reservationDeletedRequest);
         try {
             // 실제 로직 호출
             reservationService.saveDeleteHistory(reservationDeletedRequest.getMemberId(), reservationDeletedRequest.getCourseId());
