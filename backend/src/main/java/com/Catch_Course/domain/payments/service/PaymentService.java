@@ -167,4 +167,33 @@ public class PaymentService {
         log.info("DB 트랜잭션 커밋 완료. Kafka 에 결제 취소 메시지를 발행. DTO: {}", request);
         paymentCancelProducer.send(request);
     }
+
+    @Transactional
+    public void syncPaymentStatus(String orderId) {
+        log.info("결제 상태 동기화 시작: orderId={}", orderId);
+
+        // 1. 우리 DB에서 해당 주문 ID를 가진 Payment를 조회
+        Optional<Payment> opPayment = paymentRepository.findByMerchantUid(orderId);
+
+        if (opPayment.isEmpty()) {
+            log.warn("웹훅으로 수신된 주문 ID에 해당하는 결제 정보가 DB에 없습니다. orderId={}", orderId);
+            return;
+        }
+
+        Payment payment = opPayment.get();
+
+        // 2. 이미 처리된 건(PAID, CANCELLED 등)이면 로직 종료
+        if (payment.getStatus() != PaymentStatus.PENDING) {
+            log.info("이미 처리된 결제 건입니다. 동기화를 종료합니다. status={}", payment.getStatus());
+            return;
+        }
+
+        // 3. PENDING 상태라면, 최종적으로 '결제 완료' 상태로 변경
+        //    (실제로는 Toss API로 한 번 더 확인하는 로직을 추가하면 더 안전함)
+        log.info("PENDING 상태의 결제를 PAID로 변경합니다. paymentId={}", payment.getId());
+        payment.setStatus(PaymentStatus.PAID);
+        payment.getReservation().setStatus(ReservationStatus.COMPLETED);
+
+        // 변경 감지에 의해 트랜잭션 커밋 시점에 DB에 반영됨
+    }
 }
