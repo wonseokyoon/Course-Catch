@@ -15,7 +15,7 @@ public class ReservationExpirationScheduler {
     private final ReservationService reservationService;
 
     // 1분마다 실행 (cron = "초 분 시 일 월 요일")
-    @Scheduled(cron = "0 30 14 * * *")
+    @Scheduled(cron = "0 * * * * *")
     public void expirePendingPayments() {
         log.info("결제 대기 시간 만료 스케줄러 시작");
         reservationService.expireOldPendingPayments();
