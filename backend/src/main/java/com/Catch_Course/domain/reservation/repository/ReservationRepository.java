@@ -26,14 +26,19 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long> 
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @EntityGraph(attributePaths = {"course", "student", "payment"})
-    Optional<Reservation> findByIdAndStudentAndStatusWithPessimisticLock(Long reservationId, Member member, ReservationStatus reservationStatus);
+    @Query("select r from Reservation r where r.id = :reservationId and r.student = :member and r.status = :reservationStatus")
+    Optional<Reservation> findByIdAndStudentAndStatusWithPessimisticLock(
+            @Param("reservationId") Long reservationId,
+            @Param("member") Member member,
+            @Param("reservationStatus") ReservationStatus reservationStatus);
 
     @EntityGraph(attributePaths = {"course", "student", "payment"})
     Optional<Reservation> findByIdAndStudentAndStatus(Long reservationId, Member member, ReservationStatus reservationStatus);
 
     // Reservation 조회 시 연관된 Course도 함께 가져오는 메서드
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT r FROM Reservation r JOIN FETCH r.course WHERE r.id = :id")
-    Optional<Reservation> findWithCourseById(@Param("id") Long id);
+    Optional<Reservation> findWithCourseByIdWithPessimisticLock(@Param("id") Long id);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)   // 비관적 Lock, FOR UPDATE 전부 차단
     @Query("select r from Reservation r where r.id= :id")

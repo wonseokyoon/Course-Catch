@@ -36,7 +36,7 @@ public class PaymentCancelConsumer {
     public void consume(PaymentCancelRequest paymentCancelRequest) {
         log.info("결제 취소 요청 처리 시작: {}", paymentCancelRequest);
 
-        Payment payment = paymentRepository.findById(paymentCancelRequest.getPaymentId())
+        Payment payment = paymentRepository.findByIdWithPessimisticLock(paymentCancelRequest.getPaymentId())
                         .orElseThrow(() -> new ServiceException("404-5","결제 정보가 존재하지 않습니다."));
 
         if(payment.getStatus() == PaymentStatus.CANCELLED) {
@@ -53,7 +53,7 @@ public class PaymentCancelConsumer {
 
     public void cancelProcess(Payment payment,PaymentCancelRequest paymentCancelRequest) {
 
-        Reservation reservation = reservationRepository.findWithCourseById(paymentCancelRequest.getReservationId())
+        Reservation reservation = reservationRepository.findWithCourseByIdWithPessimisticLock(paymentCancelRequest.getReservationId())
                 .orElseThrow(() -> new ServiceException("404-3","수강신청 이력이 없습니다."));
 
         Member member = memberRepository.findById(paymentCancelRequest.getMemberId())

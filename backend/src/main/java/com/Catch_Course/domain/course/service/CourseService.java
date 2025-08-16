@@ -59,6 +59,10 @@ public class CourseService {
         return courseRepository.findById(courseId);
     }
 
+    public Optional<Course> getItemWithPessimisticLock(long courseId) {
+        return courseRepository.findByIdWithPessimisticLock(courseId);
+    }
+
     public long count() {
         return courseRepository.count();
     }
