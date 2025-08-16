@@ -65,7 +65,7 @@ public class PaymentService {
     @Transactional
     public PaymentDto requestPayment(Member member, Long reservationId) {
 
-        Reservation reservation = reservationRepository.findByIdAndStudentAndStatus(reservationId, member, ReservationStatus.PENDING)
+        Reservation reservation = reservationRepository.findByIdAndStudentAndStatusWithPessimisticLock(reservationId, member, ReservationStatus.PENDING)
                 .orElseThrow(() -> new ServiceException("404-3", "수강신청 이력이 없습니다."));
 
         Optional<Payment> opPayment = paymentRepository.findByReservation(reservation);
@@ -136,7 +136,7 @@ public class PaymentService {
     @Transactional
     public PaymentDto deletePaymentRequest(Member member, Long reservationId) {
         // reservation 이력 조회
-        Reservation reservation = reservationRepository.findByIdAndStudentAndStatus(reservationId, member, ReservationStatus.COMPLETED)
+        Reservation reservation = reservationRepository.findByIdAndStudentAndStatusWithPessimisticLock(reservationId, member, ReservationStatus.COMPLETED)
                 .orElseThrow(() -> new ServiceException("404-3", "수강신청 이력이 없습니다."));
 
         Payment payment = paymentRepository.findByReservation(reservation)

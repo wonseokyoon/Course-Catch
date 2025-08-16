@@ -22,12 +22,12 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
-import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 
 @Service
 @RequiredArgsConstructor
@@ -43,6 +43,7 @@ public class ReservationService {
     private final NotificationService notificationService;
     private final SseService sseService;
     private final PaymentService paymentService;
+    private final RedisTemplate<String, String> redisTemplate;
     private final int TIME_LIMIT = 2;
 
     public Reservation addToQueue(Member member, Long courseId) {
@@ -162,33 +163,20 @@ public class ReservationService {
             courseRepository.save(course);
 
             reservation.setStatus(ReservationStatus.PENDING);
+
+            // Redis에 만료 타이머 등록
+            String expirationKey = "reservation:expire:" + reservation.getId();
+            redisTemplate.opsForValue().set(expirationKey, "", TIME_LIMIT, TimeUnit.MINUTES);
+            log.info("Redis 만료 타이머 등록. Key: {}, 만료 시간: {} 분", expirationKey, TIME_LIMIT);
+
             NotificationDto notificationDto = new NotificationDto(reservation, "수강 신청이 성공하였습니다.");
             sseService.sendToClient(memberId, "ReservationResult", notificationDto);
+
             notificationService.saveNotification(memberId, notificationDto);
             reservationRepository.save(reservation);
         } catch (ServiceException e) {
             NotificationDto notificationDto = new NotificationDto(ReservationStatus.FAILED, "수강 신청 처리 중 오류가 발생했습니다. " + e.getMessage());
             sseService.sendToClient(memberId, "ReservationResult", notificationDto);
-        }
-    }
-
-    // 결제 시간 만료 설정
-    @Transactional
-    public void expireOldPendingPayments() {
-        LocalDateTime expiredTime = LocalDateTime.now().minusMinutes(TIME_LIMIT);
-
-        // 1. 유효 시간이 지난 PENDING 상태의 결제 건들을 조회
-        List<Reservation> expiredReservations = reservationRepository.findAllByStatusAndCreatedDateBefore(
-                ReservationStatus.PENDING,
-                expiredTime
-        );
-
-        if (expiredReservations.isEmpty()) {
-            return; // 처리할 건이 없으면 종료
-        }
-
-        for (Reservation reservation : expiredReservations) {
-            reservationCancelProducer.send(new ReservationCancelRequest(reservation.getId(), reservation.getStudent().getId(), reservation.getCourse().getId()));
         }
     }
 }

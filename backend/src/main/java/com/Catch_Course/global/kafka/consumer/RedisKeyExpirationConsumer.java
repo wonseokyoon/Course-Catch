@@ -2,12 +2,9 @@ package com.Catch_Course.global.kafka.consumer;
 
 import com.Catch_Course.domain.course.entity.Course;
 import com.Catch_Course.domain.course.repository.CourseRepository;
-import com.Catch_Course.domain.reservation.entity.DeletedHistory;
 import com.Catch_Course.domain.reservation.entity.Reservation;
 import com.Catch_Course.domain.reservation.entity.ReservationStatus;
-import com.Catch_Course.domain.reservation.repository.DeleteHistoryRepository;
 import com.Catch_Course.domain.reservation.repository.ReservationRepository;
-import com.Catch_Course.global.exception.ServiceException;
 import com.Catch_Course.global.kafka.dto.ReservationCancelRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -15,35 +12,40 @@ import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Optional;
+
 @Slf4j
 @Component
 @RequiredArgsConstructor
-public class ReservationCancelConsumer {
+public class RedisKeyExpirationConsumer {
 
-    private final DeleteHistoryRepository deleteHistoryRepository;
     private final ReservationRepository reservationRepository;
     private final CourseRepository courseRepository;
 
     // 구독
-    @KafkaListener(topics = "course-reservation-deleted", groupId = "course")
+    @KafkaListener(topics = "course-reservation-expired", groupId = "course")
     @Transactional
     public void consume(ReservationCancelRequest reservationCancelRequest) {
 
-        log.info("수강 취소 처리 시작: {}", reservationCancelRequest);
+        log.info("결제 기한 만료 처리 시작: {}", reservationCancelRequest);
         try {
             // 실제 로직 호출
-            Reservation reservation = reservationRepository.findByIdWithPessimisticLock(reservationCancelRequest.getReservationId())
-                    .orElseThrow(() -> new ServiceException("404-3", "수강 신청 이력이 없습니다."));
+            Optional<Reservation> optionalReservation = reservationRepository.findByIdWithPessimisticLock(reservationCancelRequest.getReservationId());
 
-            if (reservation.getStatus() == ReservationStatus.CANCELLED) {
-                log.warn("이미 취소된 예약입니다: {}", reservation.getId());
+            if (optionalReservation.isEmpty()) {
+                log.warn("취소할 예약을 찾을 수 없습니다. ID: {}", reservationCancelRequest.getReservationId());
+                return;
+            }
+
+            Reservation reservation = optionalReservation.get();
+            if (!reservation.getStatus().equals(ReservationStatus.PENDING)) {
+                log.info("예약 ID {}는 PENDING 상태가 아니므로 취소하지 않습니다. 현재 상태: {}", reservation.getId(), reservation.getStatus());
                 return;
             }
 
             cancelProcess(reservation, reservation.getCourse());
-            saveDeleteHistory(reservationCancelRequest.getMemberId(), reservationCancelRequest.getCourseId());
-            log.info("{}의 수강 취소 이력이 성공적으로 처리되었습니다.", reservationCancelRequest.getCourseId());
-        } catch (Exception e){
+            log.info("{}의 수강 취소가 성공적으로 처리되었습니다.", reservationCancelRequest.getCourseId());
+        } catch (Exception e) {
             log.error("Error Request: {}", reservationCancelRequest, e);
         }
     }
@@ -56,14 +58,5 @@ public class ReservationCancelConsumer {
         // 상태 변경
         reservation.setStatus(ReservationStatus.CANCELLED);
         reservationRepository.save(reservation);
-    }
-
-    public void saveDeleteHistory(Long memberId, Long courseId) {
-        // 기록으로 남김
-        deleteHistoryRepository.save(DeletedHistory.builder()
-                .memberId(memberId)
-                .courseId(courseId)
-                .build()
-        );
     }
 }
