@@ -43,7 +43,7 @@ public class ReservationService {
     private final NotificationService notificationService;
     private final SseService sseService;
     private final PaymentService paymentService;
-    private final int TIME_LIMIT = 10;
+    private final int TIME_LIMIT = 2;
 
     public Reservation addToQueue(Member member, Long courseId) {
         Course course = courseRepository.findByIdWithPessimisticLock(courseId)  // 비관적 Lock 을 걸고 조회
