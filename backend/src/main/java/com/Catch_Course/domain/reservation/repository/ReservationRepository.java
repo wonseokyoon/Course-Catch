@@ -12,6 +12,8 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 
 @Repository
@@ -28,4 +30,6 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long> 
     // Reservation 조회 시 연관된 Course도 함께 가져오는 메서드
     @Query("SELECT r FROM Reservation r JOIN FETCH r.course WHERE r.id = :id")
     Optional<Reservation> findWithCourseById(@Param("id") Long id);
+
+    List<Reservation> findAllByStatusAndCreatedDateBefore(ReservationStatus reservationStatus, LocalDateTime expiredTime);
 }
