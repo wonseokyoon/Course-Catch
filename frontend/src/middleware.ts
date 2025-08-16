@@ -20,7 +20,7 @@ export async function middleware(request: NextRequest) {
 async function refreshAccessToken() {
   const nextResponse = NextResponse.next();
 
-  const response = await client.GET("/api/members/me", {
+  const response = await client.GET("/api/profile/me", {
     headers: {
       cookie: (await cookies()).toString(),
     },

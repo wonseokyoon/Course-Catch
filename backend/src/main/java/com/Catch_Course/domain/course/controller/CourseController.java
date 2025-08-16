@@ -73,7 +73,7 @@ public class CourseController {
     public RsData<Void> delete(@PathVariable long id) {
 
         Member dummyMember = rq.getDummyMember();        // 더미 유저 객체(id,username,authorities 만 있음, 필요하면 DB에서 꺼내씀)
-        Course course = courseService.getItem(id)
+        Course course = courseService.getItemWithPessimisticLock(id)
                 .orElseThrow(() -> new ServiceException("404-1", "존재하지 않는 강의입니다."));
 
         course.canDelete(dummyMember);
@@ -100,7 +100,7 @@ public class CourseController {
     ) {
 
         Member dummyMember = rq.getDummyMember();
-        Course course = courseService.getItem(id)
+        Course course = courseService.getItemWithPessimisticLock(id)
                 .orElseThrow(() -> new ServiceException("404-1", "존재하지 않는 강의입니다."));
 
         if (!course.getInstructor().getId().equals(dummyMember.getId())) {
@@ -119,7 +119,8 @@ public class CourseController {
     record WriteReqBody(
             @NotBlank @Length(min = 3) String title,
             @NotBlank @Length(min = 3) String content,
-            @NotNull @Min(1) long capacity
+            @NotNull @Min(1) long capacity,
+            @NotNull @Min(1000) long price
     ) {
     }
 
@@ -130,7 +131,7 @@ public class CourseController {
     public RsData<CourseDto> write(@RequestBody @Valid WriteReqBody body) {
 
         Member dummyMember = rq.getDummyMember();
-        Course course = courseService.write(dummyMember, body.title(), body.content(), body.capacity());
+        Course course = courseService.write(dummyMember, body.title(), body.content(), body.capacity(),body.price());
 
         return new RsData<>(
                 "200-1",

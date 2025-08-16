@@ -1,9 +1,10 @@
-version: '3.8'
+# docker-compose.yml
 
 services:
   redis-dev:
     image: redis:latest
     container_name: redis-dev
+    command: ["redis-server", "--notify-keyspace-events", "Ex"]
     restart: always
     ports:
       - "6379:6379"
@@ -53,6 +54,46 @@ services:
       - kafka-dev
     networks:
       - dev-network
+
+  prometheus-dev:
+    image: prom/prometheus:latest
+    container_name: prometheus-dev
+    restart: always
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    networks:
+      - dev-network
+
+  grafana-dev:
+    image: grafana/grafana-oss:latest
+    container_name: grafana-dev
+    restart: always
+    ports:
+      - "3001:3000"
+    depends_on:
+      - prometheus-dev
+    networks:
+      - dev-network
+
+  node_exporter:
+    image: quay.io/prometheus/node-exporter:latest
+    container_name: node_exporter
+    platform: linux/arm64
+    restart: unless-stopped
+    command:
+      - '--path.rootfs=/host'
+    volumes:
+      - '/:/host:ro'
+    networks:
+      - dev-network
+    ports:
+      - "9100:9100"
 
 networks:
   dev-network:

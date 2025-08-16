@@ -26,6 +26,7 @@ public class Course extends BaseTime {
     private String content;         // 강의 내용
     private long capacity;           // 정원
     private long currentRegistration;   // 현재 등록 인원
+    private Long price;
 
     public void canModify(Member member) {
         if (member == null) {

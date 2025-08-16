@@ -2,6 +2,7 @@ package com.Catch_Course.domain.reservation.entity;
 
 import com.Catch_Course.domain.course.entity.Course;
 import com.Catch_Course.domain.member.entity.Member;
+import com.Catch_Course.domain.payments.entity.Payment;
 import com.Catch_Course.global.entity.BaseTime;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -30,4 +31,17 @@ public class Reservation extends BaseTime {
 
     @Enumerated(EnumType.STRING)
     private ReservationStatus status;      // 신청 상태
+
+    @OneToOne(mappedBy = "reservation", fetch = FetchType.LAZY)
+    private Payment payment;
+
+    @Column(nullable = false)
+    private Long price;
+
+    public Reservation(Member student, Course course, ReservationStatus status, Long price) {
+        this.student = student;
+        this.course = course;
+        this.status = status;
+        this.price = price;
+    }
 }

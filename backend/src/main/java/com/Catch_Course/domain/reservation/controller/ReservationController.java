@@ -45,22 +45,37 @@ public class ReservationController {
     public RsData<ReservationDto> cancelReservation(@RequestParam Long courseId) {
 
         Member member = rq.getMember(rq.getDummyMember());  // 실제 멤버 객체
-        ReservationDto reservationDto = reservationService.cancelReserve(member, courseId);
+        ReservationDto reservationDto = reservationService.cancelReserveRequest(member, courseId);
 
         return new RsData<>(
                 "200-1",
-                "수강 취소되었습니다.",
+                "수강 취소 요청이 접수되었습니다.",
                 reservationDto
         );
     }
 
-    @Operation(summary = "수강 목록 조회")
+    @Operation(summary = "수강 목록 조회(결제 완료)")
     @GetMapping("/me")
-    public RsData<PageDto> getReservations(@RequestParam(defaultValue = "1") int page,
+    public RsData<PageDto> getReservationsCompleted(@RequestParam(defaultValue = "1") int page,
                                                         @RequestParam(defaultValue = "5") int pageSize) {
         Member member = rq.getMember(rq.getDummyMember());  // 실제 멤버 객체
 
         Page<Reservation> reservationPage = reservationService.getReservations(member, page, pageSize);
+
+        return new RsData<>(
+                "200-1",
+                "신청 목록 조회가 완료되었습니다.",
+                new PageDto(reservationPage)
+        );
+    }
+
+    @Operation(summary = "수강 목록 조회(결제 대기)")
+    @GetMapping("/me/pending")
+    public RsData<PageDto> getReservations(@RequestParam(defaultValue = "1") int page,
+                                           @RequestParam(defaultValue = "5") int pageSize) {
+        Member member = rq.getMember(rq.getDummyMember());  // 실제 멤버 객체
+
+        Page<Reservation> reservationPage = reservationService.getReservationsPending(member, page, pageSize);
 
         return new RsData<>(
                 "200-1",

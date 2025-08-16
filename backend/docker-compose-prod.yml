@@ -16,6 +16,7 @@ services:
   redis-prod:
     image: redis:latest
     container_name: redis-prod
+    command: ["redis-server", "--notify-keyspace-events", "Ex"]
     restart: always
     ports:
       - "6380:6379"

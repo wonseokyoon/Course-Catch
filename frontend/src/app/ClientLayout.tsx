@@ -37,7 +37,7 @@ export default function ClinetLayout({
   };
  
   async function fetchLoginMember() {
-    const response = await client.GET("/api/members/me", {
+    const response = await client.GET("/api/profile/me", {
       credentials: "include",
     });
 

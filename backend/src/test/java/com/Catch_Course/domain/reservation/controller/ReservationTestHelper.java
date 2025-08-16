@@ -23,7 +23,7 @@ public class ReservationTestHelper {
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)  // 반드시 새로운 트랜잭션 생성
     public void reserveSetUp(Member loginedMember, Course course) {
-        Reservation reservation = new Reservation(loginedMember,course, ReservationStatus.WAITING);  // 대기열 등록
+        Reservation reservation = new Reservation(loginedMember,course, ReservationStatus.WAITING, course.getPrice());  // 대기열 등록
         reservationRepository.save(reservation);
         reservationService.processReservation(course.getId(), loginedMember.getId());    // 수강 신청
         em.flush(); // DB에 적고
@@ -41,6 +41,22 @@ public class ReservationTestHelper {
     @Transactional(propagation = Propagation.REQUIRES_NEW)  // 반드시 새로운 트랜잭션 생성
     public void addQueue(Member loginedMember,Long courseId) {
         reservationService.addToQueue(loginedMember,courseId);
+        em.flush(); // DB에 적고
+        em.clear(); // 영속성 컨텍스트 클리어
+    }
+
+    @Transactional(propagation = Propagation.REQUIRES_NEW)  // 반드시 새로운 트랜잭션 생성
+    public void reserveSetUpFailed(Member loginedMember, Course course) {
+        Reservation reservation = new Reservation(loginedMember,course, ReservationStatus.FAILED, course.getPrice());  // 대기열 등록
+        reservationRepository.save(reservation);
+        em.flush(); // DB에 적고
+        em.clear(); // 영속성 컨텍스트 클리어
+    }
+
+    @Transactional(propagation = Propagation.REQUIRES_NEW)  // 반드시 새로운 트랜잭션 생성
+    public void reserveSetUpWaiting(Member loginedMember, Course course) {
+        Reservation reservation = new Reservation(loginedMember,course, ReservationStatus.WAITING, course.getPrice());  // 대기열 등록
+        reservationRepository.save(reservation);
         em.flush(); // DB에 적고
         em.clear(); // 영속성 컨텍스트 클리어
     }

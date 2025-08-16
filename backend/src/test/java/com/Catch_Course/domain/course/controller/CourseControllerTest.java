@@ -386,8 +386,8 @@ class CourseControllerTest {
                 .andExpect(jsonPath("$.msg").value("존재하지 않는 강의입니다."));
     }
 
-    private ResultActions writeRequest(String title, String content, long capacity) throws Exception {
-        Map<String, Object> requestBody = Map.of("title", title, "content", content, "capacity", capacity);
+    private ResultActions writeRequest(String title, String content, long capacity, long price) throws Exception {
+        Map<String, Object> requestBody = Map.of("title", title, "content", content, "capacity", capacity, "price", price);
 
         // Map -> Json 변환
         ObjectMapper objectMapper = new ObjectMapper();
@@ -408,8 +408,9 @@ class CourseControllerTest {
         String title = "테스트 제목";
         String content = "테스트 내용";
         long capacity = 100;
+        long price = 10000;
 
-        ResultActions resultActions = writeRequest(title, content, capacity);
+        ResultActions resultActions = writeRequest(title, content, capacity, price);
 
         resultActions
                 .andExpect(status().isOk())

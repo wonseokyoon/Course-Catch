@@ -55,15 +55,15 @@ public class BaseInitData {
 
         Member user2 = memberService.findByUsername("user2").get();
 
-        courseService.write(user2, "수학 강의", "일반 수학 기초", 50);
-        courseService.write(user2, "국어 강의", "비문학 기초", 100);
-        courseService.write(user2, "인기 폭발 강의", "늦으면 없다", 1);
+        courseService.write(user2, "수학 강의", "일반 수학 기초", 50,10000);
+        courseService.write(user2, "국어 강의", "비문학 기초", 100,20000);
+        courseService.write(user2, "인기 폭발 강의", "늦으면 없다", 1,5000);
 
         for (int i = 2; i < 50; i++) {
             int userId = (i % 5) + 2;
             Member tempUser = memberService.findByUsername("user%d".formatted(userId)).get();
-            courseService.write(tempUser, "강의 제목 %d".formatted(i), "강의 내용 %d".formatted(i), 50);
+            courseService.write(tempUser, "강의 제목 %d".formatted(i), "강의 내용 %d".formatted(i), 50,1000 * i);
         }
-        courseService.write(user2, "인기 폭발123 강의", "늦으면 없213다", 1);
+        courseService.write(user2, "인기 폭발123 강의", "늦으면 없213다", 1,500000);
     }
 }

@@ -22,7 +22,7 @@ public class CourseService {
     private final CourseRepository courseRepository;
 
     @Transactional
-    public Course write(Member member, String title, String content, long capacity) {
+    public Course write(Member member, String title, String content, long capacity, long price) {
 
         return courseRepository.save(
                 Course
@@ -32,6 +32,7 @@ public class CourseService {
                         .content(content)
                         .capacity(capacity)
                         .currentRegistration(0)
+                        .price(price)
                         .build()
         );
     }
@@ -58,6 +59,10 @@ public class CourseService {
         return courseRepository.findById(courseId);
     }
 
+    public Optional<Course> getItemWithPessimisticLock(long courseId) {
+        return courseRepository.findByIdWithPessimisticLock(courseId);
+    }
+
     public long count() {
         return courseRepository.count();
     }
@@ -76,6 +81,6 @@ public class CourseService {
 
     public Course findById(long courseId) {
         return courseRepository.findById(courseId)
-                .orElseThrow(() -> new ServiceException("404-1","존재하지 않는 강의입니다."));
+                .orElseThrow(() -> new ServiceException("404-1", "존재하지 않는 강의입니다."));
     }
 }
