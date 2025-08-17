@@ -26,7 +26,6 @@ jobs:
           java-version: '21'
           distribution: 'temurin'
       
-      # Gradle 캐싱을 추가하여 빌드 속도를 개선합니다.
       - name: Cache Gradle packages
         uses: actions/cache@v4
         with:
@@ -39,10 +38,10 @@ jobs:
 
       - name: Grant execute permission for gradlew
         run: chmod +x ./backend/gradlew
-        
-      - name: application-secret.yml 생성
+      - name: Create application-secret.yml
         run: |
           echo "$APPLICATION_SECRET" > ./backend/src/main/resources/application-secret.yml
+
       - name: Docker Login
         uses: docker/login-action@v2
         with:
@@ -50,7 +49,7 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Docker Buildx 설치
+      - name: Docker Buildx setup
         uses: docker/setup-buildx-action@v2
 
       - name: Start services for test
@@ -75,7 +74,7 @@ jobs:
   # 2. 릴리스 : main/develop 브랜치로 Push될 때만 실행
   makeTagAndRelease:
     name: Create Tag and Release
-    if: github.event_name == 'push'
+    # if: github.event_name == 'push'
     needs: backend-ci
     runs-on: ubuntu-latest
     permissions:
@@ -105,7 +104,7 @@ jobs:
   # 3. 빌드 및 배포: main/develop 브랜치로 Push될 때만 실행
   buildImageAndPush:
     name: 도커 이미지 빌드와 푸시
-    if: github.event_name == 'push'
+    # if: github.event_name == 'push'
     needs: makeTagAndRelease
     runs-on: ubuntu-latest
     steps:
@@ -143,7 +142,6 @@ jobs:
         with:
           context: ./backend
           push: true
-          # 이 옵션을 추가하여 Docker 빌드 캐시를 사용하지 않도록 강제합니다.
           no-cache: true
           tags: |
             ghcr.io/${{ env.OWNER_LC }}/catch-course:${{ needs.makeTagAndRelease.outputs.tag_name }}
