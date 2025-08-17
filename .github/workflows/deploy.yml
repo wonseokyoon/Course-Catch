@@ -13,7 +13,6 @@ on:
 jobs:
   backend-ci:
     runs-on: ubuntu-latest
-    # [수정] 모든 run 명령어에 working-directory를 강제하던 defaults 설정을 제거했습니다.
     env:
       APPLICATION_SECRET: ${{ secrets.APPLICATION_SECRET }}
 
@@ -57,7 +56,7 @@ jobs:
         run: ls -la
 
       - name: Start services for test
-        run: docker compose up -d
+        run: docker compose -f docker-compose.yml up -d
 
       - name: Run tests with Gradle
         run: ./gradlew test
@@ -65,7 +64,7 @@ jobs:
 
       - name: Stop services after test
         if: always()
-        run: docker compose down
+        run: docker compose -f docker-compose.yml down
 
       # 테스트 실패 시 리포트를 아티팩트로 업로드하여 디버깅을 돕습니다.
       - name: Upload test reports
