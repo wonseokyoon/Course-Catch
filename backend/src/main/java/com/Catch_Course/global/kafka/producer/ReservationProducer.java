@@ -15,7 +15,7 @@ public class ReservationProducer {
     private static final String TOPIC = "course-reservation";
 
     public void send(String key, ReservationRequest reservationRequest) {
-        log.info("Sending reservation request: {}", reservationRequest);
+        log.info("수강신청 요청 메세지 전송: {}", reservationRequest);
         kafkaTemplate.send(TOPIC,key, reservationRequest);
     }
 }
