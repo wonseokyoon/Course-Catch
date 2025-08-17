@@ -13,9 +13,6 @@ on:
 jobs:
   backend-ci:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: ./backend
     env:
       APPLICATION_SECRET: ${{ secrets.APPLICATION_SECRET }}
 
@@ -41,12 +38,11 @@ jobs:
             ${{ runner.os }}-gradle-
 
       - name: Grant execute permission for gradlew
-        run: chmod +x ./gradlew
-
+        run: chmod +x ./backend/gradlew
+        
       - name: application-secret.yml 생성
         run: |
-          echo "$APPLICATION_SECRET" > src/main/resources/application-secret.yml
-
+          echo "$APPLICATION_SECRET" > ./backend/src/main/resources/application-secret.yml
       - name: Docker Login
         uses: docker/login-action@v2
         with:
@@ -56,15 +52,17 @@ jobs:
 
       - name: Docker Buildx 설치
         uses: docker/setup-buildx-action@v2
+
       - name: Start services for test
-        run: docker compose -f ../docker-compose.yml up -d
+        run: docker compose up -d
 
       - name: Run tests with Gradle
         run: ./gradlew test
+        working-directory: ./backend
 
       - name: Stop services after test
         if: always()
-        run: docker compose -f ../docker-compose.yml down
+        run: docker compose down
 
       # 테스트 실패 시 리포트를 아티팩트로 업로드하여 디버깅을 돕습니다.
       - name: Upload test reports
@@ -77,7 +75,7 @@ jobs:
   # 2. 릴리스 : main/develop 브랜치로 Push될 때만 실행
   makeTagAndRelease:
     name: Create Tag and Release
-    # if: github.event_name == 'push'
+    if: github.event_name == 'push'
     needs: backend-ci
     runs-on: ubuntu-latest
     permissions:
@@ -107,7 +105,7 @@ jobs:
   # 3. 빌드 및 배포: main/develop 브랜치로 Push될 때만 실행
   buildImageAndPush:
     name: 도커 이미지 빌드와 푸시
-    # if: github.event_name == 'push'
+    if: github.event_name == 'push'
     needs: makeTagAndRelease
     runs-on: ubuntu-latest
     steps:
