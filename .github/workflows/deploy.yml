@@ -13,6 +13,7 @@ on:
 jobs:
   backend-ci:
     runs-on: ubuntu-latest
+    # [수정] 모든 run 명령어에 working-directory를 강제하던 defaults 설정을 제거했습니다.
     env:
       APPLICATION_SECRET: ${{ secrets.APPLICATION_SECRET }}
 
@@ -51,6 +52,9 @@ jobs:
 
       - name: Docker Buildx setup
         uses: docker/setup-buildx-action@v2
+
+      - name: List files in root directory
+        run: ls -la
 
       - name: Start services for test
         run: docker compose up -d
