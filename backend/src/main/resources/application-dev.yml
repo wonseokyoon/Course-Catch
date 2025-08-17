@@ -22,6 +22,8 @@ logging:
     org.hibernate.orm.jdbc.bind: TRACE
     org.hibernate.orm.jdbc.extract: TRACE
     org.springframework.transaction.interceptor: TRACE
+    org.springframework.data.redis: DEBUG
+    io.lettuce.core: DEBUG
 
 management:
   endpoints:

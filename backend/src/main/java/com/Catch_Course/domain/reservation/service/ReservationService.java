@@ -14,6 +14,7 @@ import com.Catch_Course.domain.reservation.repository.ReservationRepository;
 import com.Catch_Course.global.exception.ServiceException;
 import com.Catch_Course.global.kafka.dto.ReservationCancelRequest;
 import com.Catch_Course.global.kafka.dto.ReservationRequest;
+import com.Catch_Course.global.kafka.producer.RedisExpirationProducer;
 import com.Catch_Course.global.kafka.producer.ReservationCancelProducer;
 import com.Catch_Course.global.kafka.producer.ReservationProducer;
 import com.Catch_Course.global.sse.service.SseService;
@@ -43,8 +44,9 @@ public class ReservationService {
     private final NotificationService notificationService;
     private final SseService sseService;
     private final PaymentService paymentService;
-    private final RedisTemplate<String, String> redisTemplate;
-    private final int TIME_LIMIT = 2;
+    private final RedisTemplate<String, Object> redisTemplate;
+    private final RedisExpirationProducer redisExpirationProducer;
+    private final int TIME_LIMIT = 1;
 
     public Reservation addToQueue(Member member, Long courseId) {
         Course course = courseRepository.findByIdWithPessimisticLock(courseId)  // 비관적 Lock 을 걸고 조회
@@ -179,4 +181,23 @@ public class ReservationService {
             sseService.sendToClient(memberId, "ReservationResult", notificationDto);
         }
     }
+
+    public void expireReservation(Long reservationId) {
+        log.info("만료 처리 서비스 시작. 예약 ID: {}", reservationId);
+        try {
+            Optional<Reservation> reservation = reservationRepository.findByIdWithPessimisticLock(reservationId);
+
+            if(reservation.isPresent()) {
+                Long memberId = reservation.get().getStudent().getId();
+                Long courseId = reservation.get().getCourse().getId();
+                redisExpirationProducer.send(new ReservationCancelRequest(reservationId, memberId, courseId));
+                log.info("만료 처리 Kafka 메시지 전송 성공. 예약 ID: {}", reservationId);
+            }
+            log.warn("만료 처리 시점에 예약을 찾을 수 없음. ID: {}", reservationId);
+
+        } catch (Exception e) {
+            log.error("만료 처리 중 예외 발생. 예약 ID: {}", reservationId, e);
+        }
+    }
+
 }

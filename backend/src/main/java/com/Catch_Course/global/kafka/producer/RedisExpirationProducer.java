@@ -9,7 +9,7 @@ import org.springframework.stereotype.Component;
 @Component
 @Slf4j
 @RequiredArgsConstructor
-public class RedisKeyExpirationProducer {
+public class RedisExpirationProducer {
 
     private final KafkaTemplate<String, ReservationCancelRequest> kafkaTemplate;
     private static final String TOPIC = "course-reservation-expired";
