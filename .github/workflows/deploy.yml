@@ -58,14 +58,14 @@ jobs:
         uses: docker/setup-buildx-action@v2
 
       - name: Start services for test
-        run: docker-compose -f ../docker-compose.yml up -d
+        run: docker compose -f ../docker-compose.yml up -d
 
       - name: Run tests with Gradle
         run: ./gradlew test
 
       - name: Stop services after test
         if: always()
-        run: docker-compose -f ../docker-compose.yml down
+        run: docker compose -f ../docker-compose.yml down
 
       # 테스트 실패 시 리포트를 아티팩트로 업로드하여 디버깅을 돕습니다.
       - name: Upload test reports
