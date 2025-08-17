@@ -46,7 +46,7 @@ public class ReservationService {
     private final PaymentService paymentService;
     private final RedisTemplate<String, Object> redisTemplate;
     private final RedisExpirationProducer redisExpirationProducer;
-    private final int TIME_LIMIT = 1;
+    private final int TIME_LIMIT = 30;
 
     public Reservation addToQueue(Member member, Long courseId) {
         Course course = courseRepository.findByIdWithPessimisticLock(courseId)  // 비관적 Lock 을 걸고 조회
