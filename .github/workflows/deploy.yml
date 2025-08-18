@@ -112,6 +112,20 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+
+      - name: Grant execute permission for gradlew
+        working-directory: ./backend
+        run: chmod +x ./gradlew
+
+      - name: Build JAR with Gradle
+        working-directory: ./backend
+        run: ./gradlew clean build -x test
 
       - name: 빌드 컨텍스트 확인 (backend 폴더 내용)
         run: |
