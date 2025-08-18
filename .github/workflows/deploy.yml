@@ -106,7 +106,7 @@ jobs:
 
   # 3. 빌드 및 배포: main/develop 브랜치로 Push될 때만 실행
   buildImageAndPush:
-    name: 도커 이미지 빌드와 푸시 (디버깅 모드)
+    name: 도커 이미지 빌드와 푸시
     needs: makeTagAndRelease
     runs-on: ubuntu-latest
     steps:
@@ -119,34 +119,20 @@ jobs:
           java-version: '21'
           distribution: 'temurin'
 
-      - name: 3. 체크아웃된 파일 목록 확인 (prod.yml 존재 여부)
-        run: |
-          echo "--- 전체 파일 목록 ---"
-          ls -laR ./backend
-          echo "--- prod.yml 파일 검색 ---"
-          find ./backend -name "application-prod.yml"
-
-      - name: 4. Gradle 실행 권한 부여
+      - name: 3. Gradle 실행 권한 부여
         working-directory: ./backend
         run: chmod +x ./gradlew
+      
+      - name: 4. application-secret.yml 생성 (빌드 전)
+        env:
+          APPLICATION_SECRET: ${{ secrets.APPLICATION_SECRET }}
+        run: echo "$APPLICATION_SECRET" > ./backend/src/main/resources/application-secret.yml
 
-      - name: 5. CI 환경에서 직접 Gradle 빌드 실행
+      - name: 5. CI 환경에서 Gradle 빌드 실행
         working-directory: ./backend
         run: ./gradlew clean build -x test
 
-      - name: 6. 생성된 JAR 파일 내용물 확인 (가장 중요)
-        run: |
-          echo "--- 생성된 JAR 파일 내부 목록 확인 ---"
-          jar -tf ./backend/build/libs/*.jar | grep prod
-
-      - name: 7. application-secret.yml 생성 (Docker 빌드용)
-        env:
-          APPLICATION_SECRET: ${{ secrets.APPLICATION_SECRET }}
-        run: |
-          mkdir -p ./backend/src/main/resources
-          echo "$APPLICATION_SECRET" > ./backend/src/main/resources/application-secret.yml
-
-      - name: 8. Docker 빌드 및 푸시
+      - name: 6. Docker 빌드 및 푸시
         uses: docker/build-push-action@v3
         with:
           context: ./backend
