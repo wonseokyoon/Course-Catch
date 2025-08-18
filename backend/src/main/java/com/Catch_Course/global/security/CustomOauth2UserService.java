@@ -61,8 +61,7 @@ public class CustomOauth2UserService extends DefaultOAuth2UserService {
 
             String nickname = oauthId + properties.get("nickname").toString();
             String profile_image = properties.get("profile_image").toString();
-            String email = properties.get("email").toString();
-
+            String email = nickname + "@kakao.com";
             return new SocialInfo(nickname, profile_image, email);
         } else {
             String nickname = oauthId + attributes.get("name").toString();

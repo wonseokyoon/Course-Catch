@@ -28,7 +28,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests((authorizeHttpRequests) ->
                         authorizeHttpRequests
                                 // swagger,h2 허용
-                                .requestMatchers("/swagger-ui/**", "/h2-console/**", "/v3/api-docs/**")
+                                .requestMatchers("/swagger-ui/**", "/h2-console/**", "/v3/api-docs/**","/actuator/prometheus")
                                 .permitAll()
                                 .requestMatchers("/api/courses/statistics")
                                 .hasRole("ADMIN")
