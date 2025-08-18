@@ -1,6 +1,6 @@
 ## --- Stage 1: 애플리케이션 빌드 단계 ---
 ## 소스 코드 컴파일
-#FROM openjdk:21-jdk-slim AS builder
+FROM openjdk:21-jdk-slim AS builder
 ## 컨테이너 내의 작업 디렉터리를 /app으로 설정
 WORKDIR /app
 # 모든 소스코드를 컨테이너의 /app 디렉터리로 복사
@@ -18,8 +18,6 @@ RUN ./gradlew clean build --no-daemon -x test
 # --- Stage 2: 이미지 생성 ---
 # JRE만 포함된 가벼운 이미지를 사용하여, 최소한의 파일만으로 이미지를 만듬
 FROM eclipse-temurin:21-jre
-# 소스 코드 컴파일
-FROM openjdk:21-jdk-slim AS builder
 # 컨테이너 내의 작업 디렉터리
 WORKDIR /app
 # 현재 이미지의 /app 디렉터리로 복사하고, 이름을 app.jar로 변경
