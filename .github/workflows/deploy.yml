@@ -29,14 +29,14 @@ jobs:
           java-version: '21'
           distribution: 'temurin'
       
-      # Gradle 캐싱 제거 -> 처음부터 빌드
+      # Gradle 캐싱을 추가하여 빌드 속도를 개선합니다.
       - name: Cache Gradle packages
         uses: actions/cache@v4
         with:
           path: |
             ~/.gradle/caches
             ~/.gradle/wrapper
-          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}-v2
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
           restore-keys: |
             ${{ runner.os }}-gradle-
 
@@ -107,7 +107,7 @@ jobs:
   # 3. 빌드 및 배포: main/develop 브랜치로 Push될 때만 실행
   buildImageAndPush:
     name: 도커 이미지 빌드와 푸시
-    if: github.event_name == 'push'
+    # if: github.event_name == 'push'
     needs: makeTagAndRelease
     runs-on: ubuntu-latest
     steps:
