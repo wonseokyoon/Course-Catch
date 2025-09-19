@@ -88,4 +88,4 @@
 - Kafka를 사용하여 외부 메시지 발행을 안정적으로 처리
 
 ## Link
-[Notion](https://www.notion.so/232f56a42b87812ca48bd24e9ccf37bb)
+[Notion](https://www.notion.so/Project-232f56a42b8780ac9a12e2bad830611d)
