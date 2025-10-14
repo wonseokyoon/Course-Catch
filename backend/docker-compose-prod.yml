@@ -1,4 +1,22 @@
 services:
+  # Spring Boot 애플리케이션 서비스 추가
+  app-prod:
+    image: ghcr.io/wonseokyoon/catch-course:latest
+    container_name: app-prod
+    restart: always
+    depends_on:
+      - mysql-db-prod
+      - redis-prod
+      - kafka-prod
+    ports:
+      - "8080:8080"
+    networks:
+      - prod-network
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod
+      - DB_USERNAME=${DB_USERNAME}
+      - DB_PASSWORD=${DB_PASSWORD}
+
   mysql-db-prod:
     image: mysql:8.0
     container_name: mysql-db-prod
