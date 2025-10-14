@@ -3,7 +3,9 @@ package com.Catch_Course.domain.payments.service;
 import com.Catch_Course.domain.member.entity.Member;
 import com.Catch_Course.domain.payments.dto.PaymentDto;
 import com.Catch_Course.domain.payments.entity.Payment;
+import com.Catch_Course.domain.payments.entity.PaymentOutbox;
 import com.Catch_Course.domain.payments.entity.PaymentStatus;
+import com.Catch_Course.domain.payments.repository.PaymentOutboxRepository;
 import com.Catch_Course.domain.payments.repository.PaymentRepository;
 import com.Catch_Course.domain.reservation.entity.Reservation;
 import com.Catch_Course.domain.reservation.entity.ReservationStatus;
@@ -12,9 +14,9 @@ import com.Catch_Course.global.exception.ServiceException;
 import com.Catch_Course.global.kafka.dto.PaymentCancelRequest;
 import com.Catch_Course.global.kafka.producer.PaymentCancelProducer;
 import com.Catch_Course.global.payment.TossPaymentsService;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -35,7 +37,8 @@ public class PaymentService {
     private final ReservationRepository reservationRepository;
     private final TossPaymentsService tossPaymentsService;
     private final PaymentCancelProducer paymentCancelProducer;
-    private final ApplicationEventPublisher eventPublisher;
+    private final PaymentOutboxRepository paymentOutboxRepository;
+    private final ObjectMapper objectMapper;
 
     public PaymentDto getPayment(Member member, Long reservationId) {
 
@@ -149,13 +152,24 @@ public class PaymentService {
             throw new ServiceException("409-2", "이미 취소된 결제입니다.");
         }
 
-        // 취소 요청 상태
+        // DB 상태 변경
         payment.setStatus(PaymentStatus.CANCEL_REQUESTED);
+        paymentRepository.save(payment);
 
-        // 메세지 직접 발행 대신 내부 이벤트로 발행
         String cancelReason = "고객 요청";
-        PaymentCancelRequest request = new PaymentCancelRequest(payment, cancelReason, reservation, member);
-        eventPublisher.publishEvent(request);
+        PaymentCancelRequest requestPayload = new PaymentCancelRequest(payment, cancelReason, reservation, member);
+
+        try {
+            String payloadJson = objectMapper.writeValueAsString(requestPayload);
+            PaymentOutbox outboxEvent = PaymentOutbox.builder()
+                    .aggregateId(payment.getId())
+                    .aggregateType("PAYMENT_CANCEL")
+                    .payload(payloadJson)
+                    .build();
+            paymentOutboxRepository.save(outboxEvent);
+        } catch (Exception e) {
+            throw new RuntimeException("Outbox payload 직렬화에 실패했습니다.", e);
+        }
 
         return new PaymentDto(paymentRepository.save(payment));
     }

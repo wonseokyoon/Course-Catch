@@ -35,7 +35,9 @@ import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.function.Supplier;
 
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.awaitility.Awaitility.await;
 import static org.hamcrest.Matchers.*;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
@@ -229,14 +231,28 @@ class ReservationControllerTest {
     @DisplayName("수강 취소 실패 - 이미 취소")
     void cancelReservation2() throws Exception {
         Long courseId = 1L;
-        cancelReservation();    // 수강 취소
-        Thread.sleep(1000);
+        cancelReservation();
 
+        // then 1: DB에서 방금 생성된 예약을 직접 조회하여 ID를 확보
+        Course course = courseService.findById(courseId);
+        Reservation reservation = reservationRepository.findByStudentAndCourse(loginedMember, course)
+                .orElseThrow(() -> new AssertionError("테스트 예약을 찾을 수 없습니다."));
+        Long reservationId = reservation.getId();
+
+        // then 2: Awaitility를 사용해 비동기 처리가 완료될 때까지 대기
+        await().atMost(5, SECONDS).untilAsserted(() -> {
+            Reservation updatedReservation = reservationRepository.findById(reservationId)
+                    .orElseThrow(() -> new AssertionError("예약을 찾을 수 없습니다."));
+            assertThat(updatedReservation.getStatus()).isEqualTo(ReservationStatus.CANCELLED);
+        });
+
+        // when 2: 두 번째 수강 취소 요청
         ResultActions resultActions = mvc.perform(
                 delete("/api/reserve?courseId=%d".formatted(courseId))
                         .header("Authorization", "Bearer " + token)
         ).andDo(print());
 
+        // then 3: 최종 결과 검증
         resultActions
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.code").value("409-5"))

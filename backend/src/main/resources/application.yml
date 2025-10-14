@@ -71,4 +71,4 @@ spring:
 app:
   registration-time:
     start: "09:00"
-    duration-in-minutes: 900
+    duration-in-minutes: 1080
